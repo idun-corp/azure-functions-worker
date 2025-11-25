@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace AzureFunctions.Worker.Extensions.TestHost.Swagger;
@@ -29,9 +29,9 @@ internal class SecurityRequirementOperationFilter(IOptions<SwaggerGenOptions> sw
         {
             foreach (var scheme in swaggerOptions.Value.SwaggerGeneratorOptions.SecuritySchemes.Values)
             {
-                operation.Security.Add(new OpenApiSecurityRequirement
+                operation.Security?.Add(new OpenApiSecurityRequirement
                 {
-                    { scheme, new List<string>() },
+                    { scheme as OpenApiSecuritySchemeReference, new List<string>() },
                 });
             }
 

@@ -11,7 +11,7 @@ using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -160,11 +160,11 @@ void ConfigureSwagger()
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.Http,
                     Scheme = "Bearer",
-                    Reference = new OpenApiReference
-                    {
-                        Id = "Bearer",
-                        Type = ReferenceType.SecurityScheme,
-                    },
+                    //Reference = new OpenApiReference
+                    //{
+                    //    Id = "Bearer",
+                    //    Type = ReferenceType.SecurityScheme,
+                    //},
                 },
             };
 
