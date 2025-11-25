@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Project Path="AzureFunctions.Worker.Extensions.AppConfiguration.Host/AzureFunctions.Worker.Extensions.AppConfiguration.Host.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.AppConfiguration/AzureFunctions.Worker.Extensions.AppConfiguration.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.ApplicationInsights/AzureFunctions.Worker.Extensions.ApplicationInsights.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.AspNetCore/AzureFunctions.Worker.Extensions.AspNetCore.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.Caching.AzureTable/AzureFunctions.Worker.Extensions.Caching.AzureTable.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.DurableTask.Client/AzureFunctions.Worker.Extensions.DurableTask.Client.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.DurableTask/AzureFunctions.Worker.Extensions.DurableTask.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.Swashbuckle/AzureFunctions.Worker.Extensions.Swashbuckle.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.TestHost/AzureFunctions.Worker.Extensions.TestHost.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.Tests/AzureFunctions.Worker.Extensions.Tests.csproj" />
+  <Project Path="DurableTask.Client.AzureStorage/DurableTask.Client.AzureStorage.csproj" />
+</Solution>
