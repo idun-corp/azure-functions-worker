@@ -23,12 +23,13 @@ steps:
   displayName: Build
   inputs:
     projects: '$(solution)'
-    arguments: '--no-restore --configuration $(buildConfiguration)'
+    arguments: '--no-restore --configuration $(buildConfiguration) /p:ContinuousIntegrationBuild=true'
 
-- task: DotNetCoreCLI@2
-  displayName: Publish
+- task: NuGetCommand@2
+  displayName: Publish packages
   inputs:
-    command: 'custom'
-    custom: 'nuget'
-    arguments: 'push *\bin\$(buildConfiguration)\*.nupkg --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key $(nugetApiKey)'
-    workingDirectory: '$(projectRoot)'
+    command: 'push'
+    packagesToPush: '$(projectRoot)/*/bin/$(buildConfiguration)/*.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: 'cfec38c0-6822-4ee7-b569-72808b0404ab'
+    allowPackageConflicts: true
