@@ -7,7 +7,7 @@ pool:
 
 variables:
   projectRoot: 'src'
-  solution: '$(projectRoot)/*.sln'
+  solution: '$(projectRoot)/*.slnx'
   buildConfiguration: 'Release'
   NUGET_PACKAGES: $(Pipeline.Workspace)/.nuget/packages
 
