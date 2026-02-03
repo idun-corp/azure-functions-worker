@@ -30,50 +30,67 @@ internal class FunctionRequestTelemetryMiddleware(
             return;
         }
 
-        var hostActivity = Activity.Current!;
-        var shouldDelegateRequestActivity = activityCoordinator is not null && FunctionContainsTriggers("httpTrigger");
+        var hostActivity = Activity.Current;
+        var createdActivity = default(Activity);
 
-        using var requestActivity = telemetryClient.StartRequestOperation(hostActivity);
-
-        var requestTelemetry = requestActivity.Telemetry;
-
-        requestTelemetry.Name = context.FunctionDefinition.Name;
-        requestTelemetry.Context.Operation.Name = context.FunctionDefinition.Name;
-
-        if (shouldDelegateRequestActivity)
+        // In .NET 10+, Activity.Current may be null due to sampling changes.
+        // Create a fallback activity from FunctionContext.TraceContext if needed.
+        if (hostActivity is null)
         {
-            activityCoordinator!.StartRequestActivity(context.InvocationId, requestTelemetry, context.CancellationToken);
+            createdActivity = CreateActivityFromTraceContext(context);
+            hostActivity = createdActivity;
         }
 
-        var success = false;
+        var shouldDelegateRequestActivity = activityCoordinator is not null && FunctionContainsTriggers("httpTrigger");
 
         try
         {
-            await next(context);
+            using var requestActivity = telemetryClient.StartRequestOperation(hostActivity);
 
-            success = true;
+            var requestTelemetry = requestActivity.Telemetry;
+
+            requestTelemetry.Name = context.FunctionDefinition.Name;
+            requestTelemetry.Context.Operation.Name = context.FunctionDefinition.Name;
+
+            if (shouldDelegateRequestActivity)
+            {
+                activityCoordinator!.StartRequestActivity(context.InvocationId, requestTelemetry, context.CancellationToken);
+            }
+
+            var success = false;
+
+            try
+            {
+                await next(context);
+
+                success = true;
+            }
+            finally
+            {
+                if (shouldDelegateRequestActivity)
+                {
+                    await activityCoordinator!.WaitForRequestActivityCompletedAsync(context.InvocationId);
+                }
+                else
+                {
+                    requestTelemetry.Success = success;
+                }
+
+                if (hostActivity.TryGetCorrelationContext() is ActivityContext activityContext)
+                {
+                    requestTelemetry.Context.Operation.Id = activityContext.TraceId.ToString();
+                    requestTelemetry.Context.Operation.ParentId = activityContext.SpanId.ToString();
+                }
+
+                foreach (var property in hostActivity.Baggage)
+                {
+                    requestTelemetry.Properties.TryAdd(property.Key, property.Value);
+                }
+            }
         }
         finally
         {
-            if (shouldDelegateRequestActivity)
-            {
-                await activityCoordinator!.WaitForRequestActivityCompletedAsync(context.InvocationId);
-            }
-            else
-            {
-                requestTelemetry.Success = success;
-            }
-
-            if (hostActivity.TryGetCorrelationContext() is ActivityContext activityContext)
-            {
-                requestTelemetry.Context.Operation.Id = activityContext.TraceId.ToString();
-                requestTelemetry.Context.Operation.ParentId = activityContext.SpanId.ToString();
-            }
-
-            foreach (var property in hostActivity.Baggage)
-            {
-                requestTelemetry.Properties.TryAdd(property.Key, property.Value);
-            }
+            createdActivity?.Stop();
         }
 
         bool FunctionContainsTriggers(params string[] expectedTriggers)
@@ -86,5 +103,18 @@ internal class FunctionRequestTelemetryMiddleware(
                 .Intersect(expectedTriggers, StringComparer.OrdinalIgnoreCase)
                 .Any();
         }
+    }
+
+    private static Activity CreateActivityFromTraceContext(FunctionContext context)
+    {
+        var activity = new Activity(context.FunctionDefinition.Name);
+
+        if (!string.IsNullOrEmpty(context.TraceContext.TraceParent))
+        {
+            activity.SetParentId(context.TraceContext.TraceParent);
+            activity.TraceStateString = context.TraceContext.TraceState;
+        }
+
+        return activity.Start();
     }
 }
