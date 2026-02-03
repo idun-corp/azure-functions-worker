@@ -44,6 +44,9 @@ internal class AspNetCoreIntegrationMiddleware(
             RouteData = httpContext.GetRouteData(),
         };
 
+        // enables ActionContext access from other middlewares via HttpContext.GetActionContext()
+        httpContext.SetActionContext(actionContext);
+
         await next(context);
 
         if (functionMetadata.HttpResultBinding is not null)
