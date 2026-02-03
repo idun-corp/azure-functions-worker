@@ -13,12 +13,10 @@ namespace AzureFunctions.Worker.Extensions.AspNetCore.Internal.Middlewares;
 /// Worker middleware that integrates AspNetCore middlewares into the execution pipeline
 /// </summary>
 /// <param name="httpContextAccessor">Http context accessor</param>
-/// <param name="actionContextAccessor">Action context accessor</param>
 /// <param name="actionResultTypeMapper">AspNetCore ActionResult type mapper</param>
 /// <param name="metadataProvider">AspNetCore function metadata provider</param>
 internal class AspNetCoreIntegrationMiddleware(
     IHttpContextAccessor httpContextAccessor,
-    IActionContextAccessor actionContextAccessor,
     IActionResultTypeMapper actionResultTypeMapper,
     AspNetCoreFunctionMetadataProvider metadataProvider)
     : IFunctionsWorkerMiddleware
@@ -39,12 +37,15 @@ internal class AspNetCoreIntegrationMiddleware(
         // enables IHttpContextAccessor support
         httpContextAccessor.HttpContext = httpContext;
 
-        actionContextAccessor.ActionContext = new ActionContext
+        var actionContext = new ActionContext
         {
             HttpContext = httpContext,
             ActionDescriptor = functionMetadata.ActionDescriptor,
             RouteData = httpContext.GetRouteData(),
         };
+
+        // enables ActionContext access from other middlewares via HttpContext.GetActionContext()
+        httpContext.SetActionContext(actionContext);
 
         await next(context);
 
@@ -63,7 +64,7 @@ internal class AspNetCoreIntegrationMiddleware(
                     functionMetadata.HttpResultDataType is null &&
                     !httpContext.Response.HasStarted)
                 {
-                    await new NoContentResult().ExecuteResultAsync(actionContextAccessor.ActionContext);
+                    await new NoContentResult().ExecuteResultAsync(actionContext);
 
                     return;
                 }
@@ -79,7 +80,7 @@ internal class AspNetCoreIntegrationMiddleware(
                 // TODO: remove this code once https://github.com/Azure/azure-functions-dotnet-worker/issues/2682 is fixed
                 if (invocationResult.Value is IActionResult actionResult)
                 {
-                    await actionResult.ExecuteResultAsync(actionContextAccessor.ActionContext);
+                    await actionResult.ExecuteResultAsync(actionContext);
 
                     invocationResult.Value = null;
                 }
@@ -107,7 +108,7 @@ internal class AspNetCoreIntegrationMiddleware(
                 // TODO: remove this code once https://github.com/Azure/azure-functions-dotnet-worker/issues/2682 is fixed
                 if (outputBindingData?.Value is IActionResult actionResult)
                 {
-                    await actionResult.ExecuteResultAsync(actionContextAccessor.ActionContext);
+                    await actionResult.ExecuteResultAsync(actionContext);
 
                     outputBindingData.Value = Enumerable.Empty<object>();
                 }

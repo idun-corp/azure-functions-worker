@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Converters;
@@ -17,9 +16,7 @@ namespace AzureFunctions.Worker.Extensions.AspNetCore.Internal.Middlewares;
 /// <param name="parameterBinder">AspNet core function parameter binder</param>
 /// <param name="functionMetadataProvider">Function metadata provider</param>
 /// <param name="mvcOptions">Mvc options</param>
-/// <param name="actionContextAccessor">Action context accessor</param>
 internal class AspNetCoreModelStateValidationMiddleware(
-    IActionContextAccessor actionContextAccessor,
     ParameterBinder parameterBinder,
     AspNetCoreFunctionMetadataProvider functionMetadataProvider,
     IOptions<MvcOptions> mvcOptions) : IMiddleware
@@ -44,7 +41,7 @@ internal class AspNetCoreModelStateValidationMiddleware(
             return;
         }
 
-        var actionContext = actionContextAccessor.ActionContext!;
+        var actionContext = context.GetActionContext()!;
         var cacheBindingInput = CreateBindingInputCacheSetter(functionContext);
         var actionParameters = new Dictionary<string, object?>(metadata.AspNetCoreParameters.Length);
 
