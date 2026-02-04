@@ -23,7 +23,7 @@ steps:
   displayName: Build
   inputs:
     projects: '$(solution)'
-    arguments: '--no-restore --configuration $(buildConfiguration) /p:ContinuousIntegrationBuild=true'
+    arguments: '--no-restore --configuration $(buildConfiguration)'
 
 - task: NuGetCommand@2
   displayName: Publish packages
