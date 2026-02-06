@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <PackageId>AzureFunctions.Worker.Extensions.AppConfiguration.Host</PackageId>
+    <Description>Azure App Configuration provider for Azure Functions WebJobs SDK host with managed identity support.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <Version>$(AppConfigurationHostVersion)</Version>
