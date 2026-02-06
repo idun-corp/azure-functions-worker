@@ -12,6 +12,9 @@ variables:
   NUGET_PACKAGES: $(Pipeline.Workspace)/.nuget/packages
 
 steps:
+- task: NuGetAuthenticate@0
+  displayName: 'Authenticate NuGet'
+
 - task: DotNetCoreCLI@2
   displayName: Restore
   inputs:
