@@ -17,6 +17,8 @@ steps:
   inputs:
     command: restore
     projects: '$(solution)'
+    feedsToUse: 'select'
+    vstsFeed: 'cfec38c0-6822-4ee7-b569-72808b0404ab'
     verbosityRestore: minimal
 
 - task: DotNetCoreCLI@2
