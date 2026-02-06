@@ -35,7 +35,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Version>3.0.0</Version>
-    <AppConfigurationHostVersion>3.0.0</AppConfigurationHostVersion>
+    <AppConfigurationHostVersion>2.2.0</AppConfigurationHostVersion>
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
