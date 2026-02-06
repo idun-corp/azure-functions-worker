@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>AzureFunctions.Worker.Extensions.AspNetCore</PackageId>
+    <Description>Use ASP.NET Core middleware and bindings with Azure Functions Worker runtime for MVC-like request handling.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>

@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>AzureFunctions.Worker.Extensions.Caching.AzureTable</PackageId>
+    <Description>Distributed caching using Azure Table Storage as the backend provider for IDistributedCache.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
   </PropertyGroup>

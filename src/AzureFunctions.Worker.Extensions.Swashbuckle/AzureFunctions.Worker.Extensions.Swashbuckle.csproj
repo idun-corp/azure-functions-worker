@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <PackageId>AzureFunctions.Worker.Extensions.Swashbuckle</PackageId>
+    <Description>Swashbuckle Swagger UI integration for Azure Functions Worker runtime with zero code modifications.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>

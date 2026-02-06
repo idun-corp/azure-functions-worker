@@ -4,6 +4,7 @@
     <File Path=".gitignore" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
+    <File Path="NuGet.config" />
   </Folder>
   <Project Path="AzureFunctions.Worker.Extensions.AppConfiguration.Host/AzureFunctions.Worker.Extensions.AppConfiguration.Host.csproj" />
   <Project Path="AzureFunctions.Worker.Extensions.AppConfiguration/AzureFunctions.Worker.Extensions.AppConfiguration.csproj" />

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <PackageId>AzureFunctions.Worker.Extensions.AppConfiguration</PackageId>
+    <Description>Azure App Configuration provider for Azure Functions Worker runtime with managed identity support.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>
