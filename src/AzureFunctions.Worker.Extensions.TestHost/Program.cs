@@ -89,7 +89,7 @@ void ConfigureAuthorization()
         {
             return context.Resource is HttpContext httpContext &&
                 httpContext.Request.Headers.TryGetValue("Authorization", out var authorization) &&
-                authorization == "Bearer 123456";
+                authorization.ToString().StartsWith("Bearer");
         })
         .Build();
 
@@ -160,11 +160,6 @@ void ConfigureSwagger()
                     In = ParameterLocation.Header,
                     Type = SecuritySchemeType.Http,
                     Scheme = "Bearer",
-                    //Reference = new OpenApiReference
-                    //{
-                    //    Id = "Bearer",
-                    //    Type = ReferenceType.SecurityScheme,
-                    //},
                 },
             };
 

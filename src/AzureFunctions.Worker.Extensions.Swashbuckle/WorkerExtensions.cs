@@ -2,6 +2,7 @@ using System.Net.Mime;
 using System.Reflection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,7 +58,11 @@ public static class WorkerExtensions
                         FileDownloadName = faviconFileName,
                     };
 
-                    return actionResult.ExecuteResultAsync(httpContext.GetActionContext()!);
+                    return actionResult.ExecuteResultAsync(new ActionContext
+                    {
+                        HttpContext = httpContext,
+                        RouteData = httpContext.GetRouteData(),
+                    });
                 }
             }
 

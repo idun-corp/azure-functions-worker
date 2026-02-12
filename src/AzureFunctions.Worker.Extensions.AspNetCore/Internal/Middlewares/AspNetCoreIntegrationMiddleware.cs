@@ -44,9 +44,6 @@ internal class AspNetCoreIntegrationMiddleware(
             RouteData = httpContext.GetRouteData(),
         };
 
-        // enables ActionContext access from other middlewares via HttpContext.GetActionContext()
-        httpContext.SetActionContext(actionContext);
-
         await next(context);
 
         if (functionMetadata.HttpResultBinding is not null)
@@ -69,26 +66,10 @@ internal class AspNetCoreIntegrationMiddleware(
                     return;
                 }
 
-                if (invocationResult.Value is not null &&
-                    invocationResult.Value is not HttpResponseData &&
-                    invocationResult.Value is not IActionResult)
+                if (ShouldMapResultValue(invocationResult.Value))
                 {
                     invocationResult.Value = actionResultTypeMapper
                         .Convert(invocationResult.Value, functionMetadata.HttpResultDataType!);
-                }
-
-                // TODO: remove this code once https://github.com/Azure/azure-functions-dotnet-worker/issues/2682 is fixed
-                if (invocationResult.Value is IActionResult actionResult)
-                {
-                    await actionResult.ExecuteResultAsync(actionContext);
-
-                    invocationResult.Value = null;
-                }
-                else if (invocationResult.Value is IResult result)
-                {
-                    await result.ExecuteAsync(httpContext);
-
-                    invocationResult.Value = null;
                 }
             }
             else
@@ -97,27 +78,19 @@ internal class AspNetCoreIntegrationMiddleware(
                     .GetOutputBindings<object?>()
                     .FirstOrDefault(binding => binding.Name == functionMetadata.HttpResultBinding.Name);
 
-                if (outputBindingData?.Value is not null &&
-                    outputBindingData.Value is not HttpResponseData &&
-                    outputBindingData.Value is not IActionResult)
+                if (outputBindingData is not null &&
+                    ShouldMapResultValue(outputBindingData.Value))
                 {
                     outputBindingData.Value = actionResultTypeMapper
                         .Convert(outputBindingData.Value, functionMetadata.HttpResultDataType!);
                 }
+            }
 
-                // TODO: remove this code once https://github.com/Azure/azure-functions-dotnet-worker/issues/2682 is fixed
-                if (outputBindingData?.Value is IActionResult actionResult)
-                {
-                    await actionResult.ExecuteResultAsync(actionContext);
-
-                    outputBindingData.Value = Enumerable.Empty<object>();
-                }
-                else if (outputBindingData?.Value is IResult result)
-                {
-                    await result.ExecuteAsync(httpContext);
-
-                    outputBindingData.Value = Enumerable.Empty<object>();
-                }
+            static bool ShouldMapResultValue(object? result)
+            {
+                return result is not null &&
+                    result is not HttpResponseData &&
+                    result is not IActionResult;
             }
         }
     }

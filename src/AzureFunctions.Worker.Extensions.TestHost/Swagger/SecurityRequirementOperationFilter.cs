@@ -27,11 +27,13 @@ internal class SecurityRequirementOperationFilter(IOptions<SwaggerGenOptions> sw
 
         if (!hasAnonymousAttribute && authorizeAttributes.Count > 0)
         {
+            operation.Security ??= [];
+
             foreach (var scheme in swaggerOptions.Value.SwaggerGeneratorOptions.SecuritySchemes.Values)
             {
                 operation.Security?.Add(new OpenApiSecurityRequirement
                 {
-                    { scheme as OpenApiSecuritySchemeReference, new List<string>() },
+                    { new(scheme.Scheme!, context.Document), new List<string>() },
                 });
             }
 
