@@ -19,7 +19,8 @@ internal sealed class CachedConfigurationSource : IConfigurationSource
 
     public CachedConfigurationSource(
         IConfigurationSource internalSource,
-        string cacheId)
+        string cacheId,
+        string filePath)
     {
         this.internalSource = internalSource;
         this.cacheFilePath = PathHelper.GetSecretsPathFromSecretsId(cacheId);
@@ -33,7 +34,7 @@ internal sealed class CachedConfigurationSource : IConfigurationSource
 
         this.cacheSource = new JsonConfigurationSource
         {
-            Path = Path.GetFileName(this.cacheFilePath),
+            Path = filePath,
             FileProvider = new PhysicalFileProvider(directoryPath),
             Optional = true,
             ReloadOnChange = true,

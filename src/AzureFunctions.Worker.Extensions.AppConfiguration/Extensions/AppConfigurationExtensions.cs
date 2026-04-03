@@ -37,12 +37,16 @@ public static class AppConfigurationExtensions
                 credentialOptions.TenantId = tenantId;
             }
 
-            credential = credential ?? new DefaultAzureCredential(credentialOptions);
+            credential ??= new DefaultAzureCredential(credentialOptions);
+
+            var cacheFile = Environment.GetEnvironmentVariable("APPCONFIG_CACHE_FILE");
 
             appBuilder.Configuration.AddAzureAppConfiguration(
                 appConfigEndpointUri,
                 credential,
-                useCache: appBuilder.Environment.IsDevelopment(),
+                useCacheFile: appBuilder.Environment.IsDevelopment()
+                    ? cacheFile ?? "secrets.json"
+                    : null,
                 configureAppConfigurationOptions,
                 configureKeyVaultOptions);
         }

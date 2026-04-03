@@ -28,10 +28,14 @@ public class AppConfigurationHostStartup : IWebJobsStartup, IWebJobsConfiguratio
 
             try
             {
+                var cacheFile = Environment.GetEnvironmentVariable("APPCONFIG_CACHE_FILE");
+
                 builder.ConfigurationBuilder.AddAzureAppConfiguration(
                     appConfigEndpoint,
                     new DefaultAzureCredential(credentialOptions),
-                    useCache: isDevelopment,
+                    useCacheFile: isDevelopment
+                        ? cacheFile ?? "secrets.json"
+                        : null,
                     appConfig =>
                     {
                         if (Environment.GetEnvironmentVariable("APPCONFIG_SELECT") is string selectString)

@@ -13,7 +13,7 @@ internal static class ConfigurationBuilderExtensions
     /// <param name="builder">Configuration builder</param>
     /// <param name="appConfigUri">Azure App Configuration Endpoint URI</param>
     /// <param name="credential">Custom credentials to connect to App Configuration</param>
-    /// <param name="useCache">Indicates whether App Configuration values should be cached locally</param>
+    /// <param name="useCacheFile">Indicates whether App Configuration values should be cached in local file</param>
     /// <param name="configureAppConfigurationOptions">Action to configure <see cref="AzureAppConfigurationOptions"/></param>
     /// <param name="configureKeyVaultOptions">Action to configure <see cref="AzureAppConfigurationKeyVaultOptions"/></param>
     /// <returns>Configuration builder with added App Configuration source</returns>
@@ -21,7 +21,7 @@ internal static class ConfigurationBuilderExtensions
         this IConfigurationBuilder builder,
         Uri appConfigUri,
         TokenCredential credential,
-        bool useCache,
+        string? useCacheFile = null,
         Action<AzureAppConfigurationOptions>? configureAppConfigurationOptions = null,
         Action<AzureAppConfigurationKeyVaultOptions>? configureKeyVaultOptions = null)
     {
@@ -39,11 +39,12 @@ internal static class ConfigurationBuilderExtensions
             configureAppConfigurationOptions?.Invoke(appConfigOptions);
         });
 
-        if (useCache)
+        if (useCacheFile != null)
         {
             appConfigurationSource = new CachedConfigurationSource(
                 appConfigurationSource,
-                cacheId: appConfigUri.Host);
+                cacheId: appConfigUri.Host,
+                filePath: useCacheFile);
         }
 
         var environmentConfigurationSource = builder.Sources
