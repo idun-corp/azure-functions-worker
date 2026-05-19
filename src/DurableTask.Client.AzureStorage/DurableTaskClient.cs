@@ -15,7 +15,7 @@ public class DurableTaskClient
     {
         this.durableTaskClientOptions = durableTaskClientOptions;
         this.dataConverter = dataConverter;
-        this.serviceClient = new AzureStorageOrchestrationService(new()
+        this.serviceClient = this.azureStorageOrchestrationService = new AzureStorageOrchestrationService(new()
         {
             StorageAccountClientProvider = !string.IsNullOrEmpty(this.durableTaskClientOptions.Value.AccountName)
                 ? new(durableTaskClientOptions.Value.AccountName!, durableTaskClientOptions.Value.TokenCredential!)
@@ -29,6 +29,7 @@ public class DurableTaskClient
     private readonly IOptions<DurableTaskClientOptions> durableTaskClientOptions;
     private readonly SystemTextJsonDataConverter dataConverter;
     private readonly IOrchestrationServiceClient serviceClient;
+    private readonly AzureStorageOrchestrationService azureStorageOrchestrationService;
     private readonly TaskHubClient taskHubClient;
 
     public virtual async Task<IEnumerable<OrchestrationState>> ListInstancesAsync(
@@ -135,6 +136,11 @@ public class DurableTaskClient
     public virtual Task TerminateAsync(string instanceId, string reason)
     {
         return this.taskHubClient.TerminateInstanceAsync(new OrchestrationInstance { InstanceId = instanceId }, reason);
+    }
+
+    public virtual Task PurgeInstanceHistoryAsync(string instanceId)
+    {
+        return this.azureStorageOrchestrationService.PurgeInstanceHistoryAsync(instanceId);
     }
 
     public virtual async Task RaiseEventAsync(string instanceId, string eventName, object? eventData = null)
