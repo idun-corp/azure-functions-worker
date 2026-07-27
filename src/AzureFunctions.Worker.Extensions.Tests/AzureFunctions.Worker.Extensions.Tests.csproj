@@ -6,6 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AzureFunctions.TestFramework.Core" Version="0.14.0" />
+    <PackageReference Include="AzureFunctions.TestFramework.Http" Version="0.14.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -26,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AzureFunctions.Worker.Extensions.AppConfiguration.Host\AzureFunctions.Worker.Extensions.AppConfiguration.Host.csproj" />
+    <ProjectReference Include="..\AzureFunctions.Worker.Extensions.Tests.FunctionApp\AzureFunctions.Worker.Extensions.Tests.FunctionApp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

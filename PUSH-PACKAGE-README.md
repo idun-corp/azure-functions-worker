@@ -7,7 +7,7 @@ This guide explains how to manually push the `AzureFunctions.Worker.Extensions.A
 - **Package Name**: AzureFunctions.Worker.Extensions.AppConfiguration.Host
 - **Current Version**: 2.2.2 (defined in `src/Directory.Build.props`)
 - **Feed URL**: https://pkgs.dev.azure.com/idun-corp/_packaging/idun-corp/nuget/v3/index.json
-- **Target Frameworks**: net8.0, net9.0, net10.0
+- **Target Frameworks**: net8.0, net10.0
 
 ## Prerequisites
 
