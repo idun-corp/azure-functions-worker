@@ -15,6 +15,7 @@
   <Project Path="AzureFunctions.Worker.Extensions.DurableTask/AzureFunctions.Worker.Extensions.DurableTask.csproj" />
   <Project Path="AzureFunctions.Worker.Extensions.Swashbuckle/AzureFunctions.Worker.Extensions.Swashbuckle.csproj" />
   <Project Path="AzureFunctions.Worker.Extensions.TestHost/AzureFunctions.Worker.Extensions.TestHost.csproj" />
+  <Project Path="AzureFunctions.Worker.Extensions.Tests.FunctionApp/AzureFunctions.Worker.Extensions.Tests.FunctionApp.csproj" />
   <Project Path="AzureFunctions.Worker.Extensions.Tests/AzureFunctions.Worker.Extensions.Tests.csproj" />
   <Project Path="DurableTask.Client.AzureStorage/DurableTask.Client.AzureStorage.csproj" />
 </Solution>
