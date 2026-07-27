@@ -60,9 +60,14 @@ internal class AspNetCoreIntegrationMiddleware(
             {
                 var invocationResult = context.GetInvocationResult();
 
+                // the 204 fallback applies only while the response is still untouched: an
+                // unstarted response may already carry a status produced by AspNetCore
+                // middleware (e.g. a 401/403 authentication challenge short-circuiting the
+                // function) that must reach the client instead
                 if (invocationResult.Value is null &&
                     functionMetadata.HttpResultDataType is null &&
-                    !httpContext.Response.HasStarted)
+                    !httpContext.Response.HasStarted &&
+                    httpContext.Response.StatusCode == StatusCodes.Status200OK)
                 {
                     await new NoContentResult().ExecuteResultAsync(actionContext);
 
