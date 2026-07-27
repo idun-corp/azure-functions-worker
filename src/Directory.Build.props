@@ -34,12 +34,12 @@
     <NeutralLanguage>en-US</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <Version>3.0.1</Version>
+    <Version>3.0.2</Version>
     <AppConfigurationHostVersion>2.2.1</AppConfigurationHostVersion>
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
-      - Migration to .NET 10
+      - AspNetCore: Task-returning (void) HTTP functions no longer mask 401/403 auth challenges as 204
     </PackageReleaseNotes>
   </PropertyGroup>
 
