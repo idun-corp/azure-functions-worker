@@ -1,6 +1,7 @@
 name: 1.$(Date:yy).$(Date:MMdd)$(Rev:.r)
 
 trigger: none
+pr: none
 
 pool:
   vmImage: 'windows-latest'
