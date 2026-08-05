@@ -9,13 +9,15 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <DebugType>portable</DebugType>
+    <!--
+      Symbols are embedded in the assembly rather than shipped as a separate .snupkg:
+      GitHub Packages has no symbol-package endpoint and rejects the upload.
+    -->
+    <DebugType>embedded</DebugType>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TF_BUILD)' == 'true'">
+  <PropertyGroup Condition="'$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
@@ -25,23 +27,38 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- Upstream attribution: this is a fork of nazar-kuzo/azure-functions-worker. -->
     <Authors>Nazar Kuzo</Authors>
     <Copyright>All rights reserved</Copyright>
-    <PackageProjectUrl>https://github.com/nazar-kuzo/azure-functions-worker</PackageProjectUrl>
+    <!--
+      Repository metadata must point at the fork, not upstream. GitHub Packages resolves the
+      owner from the nuspec repository URL and rejects the push when it does not match the
+      feed namespace, so pointing this at nazar-kuzo would fail every publish.
+    -->
+    <PackageProjectUrl>https://github.com/idun-corp/azure-functions-worker</PackageProjectUrl>
     <PackageIconUrl />
-    <RepositoryUrl>https://github.com/nazar-kuzo/azure-functions-worker</RepositoryUrl>
-    <RepositoryType>Github</RepositoryType>
+    <RepositoryUrl>https://github.com/idun-corp/azure-functions-worker</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageTags>Azure Functions Worker Isolated AspNetCore MVC ModelBinding Middleware</PackageTags>
     <NeutralLanguage>en-US</NeutralLanguage>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <Version>3.0.3</Version>
+    <!-- Matches the LICENSE file at the repository root; this previously claimed Apache-2.0. -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>3.1.0</Version>
+    <!--
+      Deliberately NOT bumped alongside Version. AppConfiguration bakes this into an
+      ExtensionInformationAttribute, and the Functions Worker SDK generates an inner project that
+      restores AppConfiguration.Host at exactly this version from a feed. A bump therefore breaks
+      the Functions-app projects in this solution before the build that would publish the new Host
+      package, so it can never self-publish. Bumping it requires a deliberate two-step release.
+    -->
     <AppConfigurationHostVersion>2.2.2</AppConfigurationHostVersion>
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
-      - AspNetCore: Task-returning (void) HTTP functions no longer mask 401/403 auth challenges as 204
-      - LTS target frameworks only: net9.0 assets dropped (net8.0/net10.0)
+      - Published from GitHub Packages (https://nuget.pkg.github.com/idun-corp/index.json) instead of Azure Artifacts
+      - Symbols are now embedded in the assembly; no separate .snupkg is produced
+      - License metadata corrected to MIT, matching the LICENSE file
     </PackageReleaseNotes>
   </PropertyGroup>
 

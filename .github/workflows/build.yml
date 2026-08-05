@@ -1,0 +1,105 @@
+name: Build
+
+on:
+  pull_request:
+    branches: [main]
+    # ready_for_review so CI kicks in when a draft is marked ready; the job-level
+    # condition below skips the run while the PR is still a draft.
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  SOLUTION: src/AzureFunction.Worker.Extensions.slnx
+  NUGET_CONFIG: src/NuGet.config
+  GITHUB_FEED: https://nuget.pkg.github.com/idun-corp/index.json
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # Both TFMs are installed explicitly: there is no global.json, so nothing else pins the SDK.
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            8.x
+            10.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # Credentials go into the workspace copy of NuGet.config, which is never committed.
+      #
+      # The github source is authenticated with a classic PAT rather than GITHUB_TOKEN on purpose.
+      # GitHub Packages only accepts classic PATs, and GITHUB_TOKEN cannot read packages owned by a
+      # different repository - which this build needs, because the Functions Worker SDK generates an
+      # inner project that restores AppConfiguration.Host from the feed.
+      - name: Authenticate package sources
+        env:
+          AZURE_ARTIFACTS_TOKEN: ${{ secrets.AZURE_ARTIFACTS_TOKEN }}
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+        run: |
+          dotnet nuget update source idun-corp \
+            --username gh-actions --password "$AZURE_ARTIFACTS_TOKEN" \
+            --store-password-in-clear-text --configfile "$NUGET_CONFIG"
+          dotnet nuget update source github \
+            --username gh-actions --password "$GH_PACKAGES_TOKEN" \
+            --store-password-in-clear-text --configfile "$NUGET_CONFIG"
+
+      - name: Restore
+        run: dotnet restore "$SOLUTION" -p:NuGetAudit=false
+
+      # GeneratePackageOnBuild is on, so this also produces the .nupkg files pushed below.
+      # They are redirected to one directory rather than left in each project's bin/Release: that
+      # keeps the publish step from picking up stale packages built from an earlier version, which
+      # would quietly republish superseded versions to the new feed.
+      - name: Build
+        run: |
+          dotnet build "$SOLUTION" --no-restore --configuration Release \
+            -p:PackageOutputPath="$GITHUB_WORKSPACE/artifacts"
+
+      - name: Test
+        run: dotnet test "$SOLUTION" --no-build --configuration Release
+
+      # Pushed one at a time rather than by glob: the shell expands the pattern here, so there is no
+      # reliance on how dotnet nuget push handles wildcards, and a failure names the package.
+      #
+      # --skip-duplicate keeps re-runs harmless, matching allowPackageConflicts on the pipeline this
+      # replaces. Its flip side is that a forgotten version bump would publish nothing and still
+      # report success, so an empty package list is treated as an error instead.
+      - name: Publish packages
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          shopt -s nullglob
+          packages=(artifacts/*.nupkg)
+
+          if [ ${#packages[@]} -eq 0 ]; then
+            echo "::error::No packages were produced - nothing to publish."
+            exit 1
+          fi
+
+          echo "Publishing ${#packages[@]} package(s)."
+
+          for package in "${packages[@]}"; do
+            dotnet nuget push "$package" \
+              --source "$GITHUB_FEED" \
+              --api-key "${{ secrets.GH_PACKAGES_TOKEN }}" \
+              --skip-duplicate
+          done
