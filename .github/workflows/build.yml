@@ -47,20 +47,22 @@ jobs:
 
       # Credentials go into the workspace copy of NuGet.config, which is never committed.
       #
-      # The github source is authenticated with a classic PAT rather than GITHUB_TOKEN on purpose.
-      # GitHub Packages only accepts classic PATs, and GITHUB_TOKEN cannot read packages owned by a
-      # different repository - which this build needs, because the Functions Worker SDK generates an
-      # inner project that restores AppConfiguration.Host from the feed.
+      # Restoring uses a read-only classic PAT. It has to be a classic one - GitHub Packages
+      # rejects fine-grained tokens - and it is scoped to read:packages only, because nothing in
+      # this job needs to write. Publishing below uses GITHUB_TOKEN instead.
+      #
+      # The restore matters here beyond the obvious: the Functions Worker SDK generates an inner
+      # project that resolves AppConfiguration.Host from the feed at its pinned version.
       - name: Authenticate package sources
         env:
           AZURE_ARTIFACTS_TOKEN: ${{ secrets.AZURE_ARTIFACTS_TOKEN }}
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GH_PACKAGES_READ_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: |
           dotnet nuget update source idun-corp \
             --username gh-actions --password "$AZURE_ARTIFACTS_TOKEN" \
             --store-password-in-clear-text --configfile "$NUGET_CONFIG"
           dotnet nuget update source github \
-            --username gh-actions --password "$GH_PACKAGES_TOKEN" \
+            --username gh-actions --password "$GH_PACKAGES_READ_TOKEN" \
             --store-password-in-clear-text --configfile "$NUGET_CONFIG"
 
       - name: Restore
@@ -78,6 +80,10 @@ jobs:
       - name: Test
         run: dotnet test "$SOLUTION" --no-build --configuration Release
 
+      # GITHUB_TOKEN is sufficient to publish, and preferable to a PAT: it can write packages
+      # associated with its own repository, which is all these are, and it expires with the job
+      # rather than needing rotation. The cross-repository restriction only applies to reads.
+      #
       # Pushed one at a time rather than by glob: the shell expands the pattern here, so there is no
       # reliance on how dotnet nuget push handles wildcards, and a failure names the package.
       #
@@ -100,6 +106,6 @@ jobs:
           for package in "${packages[@]}"; do
             dotnet nuget push "$package" \
               --source "$GITHUB_FEED" \
-              --api-key "${{ secrets.GH_PACKAGES_TOKEN }}" \
+              --api-key "${{ secrets.GITHUB_TOKEN }}" \
               --skip-duplicate
           done
