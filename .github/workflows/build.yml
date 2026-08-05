@@ -55,12 +55,8 @@ jobs:
       # project that resolves AppConfiguration.Host from the feed at its pinned version.
       - name: Authenticate package sources
         env:
-          AZURE_ARTIFACTS_TOKEN: ${{ secrets.AZURE_ARTIFACTS_TOKEN }}
           GH_PACKAGES_READ_TOKEN: ${{ secrets.GH_PACKAGES_READ_TOKEN }}
         run: |
-          dotnet nuget update source idun-corp \
-            --username gh-actions --password "$AZURE_ARTIFACTS_TOKEN" \
-            --store-password-in-clear-text --configfile "$NUGET_CONFIG"
           dotnet nuget update source github \
             --username gh-actions --password "$GH_PACKAGES_READ_TOKEN" \
             --store-password-in-clear-text --configfile "$NUGET_CONFIG"
