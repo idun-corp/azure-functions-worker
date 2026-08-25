@@ -62,7 +62,7 @@ jobs:
             --store-password-in-clear-text --configfile "$NUGET_CONFIG"
 
       - name: Restore
-        run: dotnet restore "$SOLUTION" -p:NuGetAudit=false
+        run: dotnet restore "$SOLUTION"
 
       # GeneratePackageOnBuild is on, so this also produces the .nupkg files pushed below.
       # They are redirected to one directory rather than left in each project's bin/Release: that
