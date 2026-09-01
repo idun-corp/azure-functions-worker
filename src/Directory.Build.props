@@ -44,7 +44,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Matches the LICENSE file at the repository root; this previously claimed Apache-2.0. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>3.1.0</Version>
+    <Version>3.1.1</Version>
     <!--
       Deliberately NOT bumped alongside Version. AppConfiguration bakes this into an
       ExtensionInformationAttribute, and the Functions Worker SDK generates an inner project that
@@ -56,9 +56,9 @@
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
-      - Published from GitHub Packages (https://nuget.pkg.github.com/idun-corp/index.json) instead of Azure Artifacts
-      - Symbols are now embedded in the assembly; no separate .snupkg is produced
-      - License metadata corrected to MIT, matching the LICENSE file
+      - Patched GHSA-v5pm-xwqc-g5wc (high severity): AzureFunctions.Worker.Extensions.Swashbuckle now
+        resolves Microsoft.OpenApi 2.7.5 instead of the vulnerable 2.4.1
+      - No other package changed in 3.1.1; all eight ship in lockstep from one version
     </PackageReleaseNotes>
   </PropertyGroup>
 

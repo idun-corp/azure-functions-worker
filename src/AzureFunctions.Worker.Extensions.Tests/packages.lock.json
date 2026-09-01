@@ -486,7 +486,7 @@
       "azurefunctions.worker.extensions.tests.functionapp": {
         "type": "Project",
         "dependencies": {
-          "AzureFunctions.Worker.Extensions.AspNetCore": "[3.0.2, )",
+          "AzureFunctions.Worker.Extensions.AspNetCore": "[3.1.1, )",
           "Microsoft.Azure.Functions.Worker.Sdk": "[2.0.7, )"
         }
       }
@@ -1279,7 +1279,7 @@
       "azurefunctions.worker.extensions.tests.functionapp": {
         "type": "Project",
         "dependencies": {
-          "AzureFunctions.Worker.Extensions.AspNetCore": "[3.0.2, )",
+          "AzureFunctions.Worker.Extensions.AspNetCore": "[3.1.1, )",
           "Microsoft.Azure.Functions.Worker.Sdk": "[2.0.7, )"
         }
       }
