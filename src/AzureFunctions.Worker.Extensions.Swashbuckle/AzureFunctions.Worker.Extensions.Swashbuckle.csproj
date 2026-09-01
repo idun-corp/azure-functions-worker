@@ -5,7 +5,7 @@
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>
-      - fixed swagger route template to support yaml docs
+      - patched GHSA-v5pm-xwqc-g5wc (high): Swashbuckle.AspNetCore 10.2.3 resolves Microsoft.OpenApi 2.7.5 instead of the vulnerable 2.4.1
     </PackageReleaseNotes>
   </PropertyGroup>
 
@@ -15,8 +15,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.1.5" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.2.3" />
   </ItemGroup>
 
   <ItemGroup>
