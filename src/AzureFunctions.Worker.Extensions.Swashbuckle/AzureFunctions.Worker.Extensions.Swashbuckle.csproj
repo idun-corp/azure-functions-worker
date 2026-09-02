@@ -4,9 +4,6 @@
     <Description>Swashbuckle Swagger UI integration for Azure Functions Worker runtime with zero code modifications.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>
-      - patched GHSA-v5pm-xwqc-g5wc (high): Swashbuckle.AspNetCore 10.2.3 resolves Microsoft.OpenApi 2.7.5 instead of the vulnerable 2.4.1
-    </PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
