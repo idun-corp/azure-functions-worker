@@ -9,6 +9,9 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- TreatWarningsAsErrors covers restore too; without this an upstream advisory fails every build. -->
+    <WarningsNotAsErrors>NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!--
       Symbols are embedded in the assembly rather than shipped as a separate .snupkg:
       GitHub Packages has no symbol-package endpoint and rejects the upload.
@@ -44,7 +47,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Matches the LICENSE file at the repository root; this previously claimed Apache-2.0. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>3.1.1</Version>
+    <Version>3.1.2</Version>
     <!--
       Deliberately NOT bumped alongside Version. AppConfiguration bakes this into an
       ExtensionInformationAttribute, and the Functions Worker SDK generates an inner project that
@@ -56,9 +59,9 @@
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
-      - Patched GHSA-v5pm-xwqc-g5wc (high severity): AzureFunctions.Worker.Extensions.Swashbuckle now
-        resolves Microsoft.OpenApi 2.7.5 instead of the vulnerable 2.4.1
-      - No other package changed in 3.1.1; all eight ship in lockstep from one version
+      - Corrected an unresolved XML documentation reference in AzureFunctions.Worker.Extensions.AspNetCore
+      - No API or behaviour change otherwise; the build reports zero warnings, and warnings are errors
+        from this version on
     </PackageReleaseNotes>
   </PropertyGroup>
 
