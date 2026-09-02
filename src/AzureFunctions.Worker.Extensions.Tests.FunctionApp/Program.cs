@@ -13,6 +13,11 @@ await Program.CreateApplicationBuilder(args).Build().RunAsync();
 /// </summary>
 public partial class Program
 {
+    // Top-level statements make the generated Program public; nothing instantiates it.
+    private Program()
+    {
+    }
+
     public static FunctionsApplicationBuilder CreateApplicationBuilder(string[] args)
     {
         var builder = FunctionsApplication.CreateBuilder(args);

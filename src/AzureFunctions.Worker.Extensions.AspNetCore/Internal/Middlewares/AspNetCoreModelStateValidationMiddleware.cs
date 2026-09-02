@@ -12,7 +12,7 @@ namespace AzureFunctions.Worker.Extensions.AspNetCore.Internal.Middlewares;
 
 /// <summary>
 /// Middleware that responds to invalid <see cref="ActionContext.ModelState"/>.
-/// This middleware mimics <see cref="ModelStateInvalidFilter"/> in aspnet core.
+/// This middleware mimics <see cref="Microsoft.AspNetCore.Mvc.Infrastructure.ModelStateInvalidFilter"/> in aspnet core.
 /// </summary>
 /// <param name="parameterBinder">AspNet core function parameter binder</param>
 /// <param name="functionMetadataProvider">Function metadata provider</param>
