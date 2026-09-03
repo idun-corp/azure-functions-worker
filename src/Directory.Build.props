@@ -10,7 +10,7 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- TreatWarningsAsErrors covers restore too; without this an upstream advisory fails every build. -->
+    <!-- All four audit severities stay warnings, direct or transitive: an advisory should not fail an unrelated build. -->
     <WarningsNotAsErrors>NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!--
       Symbols are embedded in the assembly rather than shipped as a separate .snupkg:
