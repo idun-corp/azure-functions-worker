@@ -38,6 +38,14 @@ internal static class BlobCacheKeyEncoder
     {
         var escaped = Escape(key);
 
+        if (escaped.Length == 0)
+        {
+            // An empty key would otherwise produce a name ending in "/", which the service rejects.
+            // The bare marker is unreachable any other way: a key containing it escapes to "%7E",
+            // and a truncated name is always the marker plus a hash.
+            return string.Concat(namePrefix, "/", TruncationMarker.ToString());
+        }
+
         if (escaped.Length > maxEncodedKeyLength)
         {
             // The marker is itself escaped when it occurs in a key, so a name carrying one is
@@ -96,9 +104,16 @@ internal static class BlobCacheKeyEncoder
     {
         key = string.Empty;
 
-        if (string.IsNullOrEmpty(value))
+        // Absent metadata is a failure; a present but empty value is the empty key, which has to
+        // round-trip or an entry stored under it could never be read back.
+        if (value is null)
         {
             return false;
+        }
+
+        if (value.Length == 0)
+        {
+            return true;
         }
 
         var padded = value.Replace('-', '+').Replace('_', '/');

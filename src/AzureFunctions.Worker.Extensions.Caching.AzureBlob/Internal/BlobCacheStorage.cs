@@ -45,6 +45,30 @@ internal sealed class BlobCacheStorage : IDisposable
         string scope,
         TimeProvider timeProvider,
         ILogger logger)
+        : this(cacheOptions, scope, timeProvider, logger, container: null, batchClient: null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BlobCacheStorage"/> class.
+    /// </summary>
+    /// <remarks>
+    /// Takes the clients from the caller instead of building them, so the read, write and expiry
+    /// behaviour can be exercised without a storage account.
+    /// </remarks>
+    /// <param name="cacheOptions">Cache options</param>
+    /// <param name="scope">Blob name segment separating this face from the other</param>
+    /// <param name="timeProvider">Clock</param>
+    /// <param name="logger">Logger</param>
+    /// <param name="container">Container client, or null to build one from the options</param>
+    /// <param name="batchClient">Batch client, or null to build one from the options</param>
+    internal BlobCacheStorage(
+        IOptions<AzureBlobCacheOptions> cacheOptions,
+        string scope,
+        TimeProvider timeProvider,
+        ILogger logger,
+        BlobContainerClient? container,
+        BlobBatchClient? batchClient)
     {
         this.options = cacheOptions.Value;
 
@@ -53,6 +77,14 @@ internal sealed class BlobCacheStorage : IDisposable
         this.namePrefix = string.Concat(this.options.ApplicationName, "/", scope);
         this.timeProvider = timeProvider;
         this.logger = logger;
+
+        if (container is not null)
+        {
+            this.container = container;
+            this.batchClient = batchClient!;
+
+            return;
+        }
 
         var retryPolicy = new ContainerCreatingRetryPolicy();
 

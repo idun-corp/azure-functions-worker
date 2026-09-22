@@ -31,6 +31,25 @@ internal sealed class AzureBlobOutputCacheStore : IOutputCacheBufferStore, IDisp
         this.storage = new BlobCacheStorage(cacheOptions, Scope, timeProvider, logger);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureBlobOutputCacheStore"/> class.
+    /// </summary>
+    /// <remarks>
+    /// Takes a storage layer built by the caller, so the store can be exercised without an account.
+    /// </remarks>
+    /// <param name="cacheOptions">Cache options</param>
+    /// <param name="logger">Logger</param>
+    /// <param name="storage">Storage layer</param>
+    internal AzureBlobOutputCacheStore(
+        IOptions<AzureBlobCacheOptions> cacheOptions,
+        ILogger<AzureBlobOutputCacheStore> logger,
+        BlobCacheStorage storage)
+    {
+        this.options = cacheOptions.Value;
+        this.logger = logger;
+        this.storage = storage;
+    }
+
     /// <inheritdoc />
     public async ValueTask<byte[]?> GetAsync(string key, CancellationToken cancellationToken)
     {

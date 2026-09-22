@@ -28,6 +28,25 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
         this.storage = new BlobCacheStorage(cacheOptions, Scope, timeProvider, logger);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AzureBlobCache"/> class.
+    /// </summary>
+    /// <remarks>
+    /// Takes a storage layer built by the caller, so the cache can be exercised without an account.
+    /// </remarks>
+    /// <param name="cacheOptions">Cache options</param>
+    /// <param name="serializerOptions">Serializer options</param>
+    /// <param name="storage">Storage layer</param>
+    internal AzureBlobCache(
+        IOptions<AzureBlobCacheOptions> cacheOptions,
+        IOptions<JsonSerializerOptions> serializerOptions,
+        BlobCacheStorage storage)
+    {
+        this.options = cacheOptions.Value;
+        this.serializerOptions = serializerOptions;
+        this.storage = storage;
+    }
+
     /// <inheritdoc />
     public async Task<byte[]?> GetAsync(string key, CancellationToken token = default)
     {
