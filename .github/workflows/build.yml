@@ -73,8 +73,12 @@ jobs:
           dotnet build "$SOLUTION" --no-restore --configuration Release \
             -p:PackageOutputPath="$GITHUB_WORKSPACE/artifacts"
 
+      # The suite was wholly hermetic until the blob cache arrived. Its storage-level behaviour -
+      # lazy container creation off the error response, listings paging past the service maximum,
+      # concurrent writers - cannot be shown with a mock, so those tests need an Azurite instance
+      # that this job has no way to provide. They are traited instead of deleted, and run locally.
       - name: Test
-        run: dotnet test "$SOLUTION" --no-build --configuration Release
+        run: dotnet test "$SOLUTION" --no-build --configuration Release --filter "Category!=Integration"
 
       # GITHUB_TOKEN is sufficient to publish, and preferable to a PAT: it can write packages
       # associated with its own repository, which is all these are, and it expires with the job
