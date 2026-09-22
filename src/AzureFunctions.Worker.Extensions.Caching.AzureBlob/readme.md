@@ -105,6 +105,16 @@ carrying `ErrorCode: BlobNotFound` to a success, keeping the record so a surge o
 visible. `EnableDependencyTracing = false` is the blunt alternative: it silences the misses and every
 genuine storage failure with them.
 
+## Local development
+
+Everything here works against **Azurite**, including the blob batch endpoint that bulk deletes use —
+measured, not assumed, so `UseBatchDelete` stays on by default. Set `UseBatchDelete = false` only for
+storage that does not implement it.
+
+```bash
+azurite --silent --location /tmp/azurite --blobPort 10000 --queuePort 10001 --tablePort 10002
+```
+
 ## Keys
 
 A key is percent-escaped per character, so prefix search stays exact and the whole key lives in one
