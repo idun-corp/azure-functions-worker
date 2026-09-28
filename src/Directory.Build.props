@@ -45,7 +45,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Matches the LICENSE file at the repository root; this previously claimed Apache-2.0. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>3.1.2</Version>
+    <Version>3.1.3</Version>
     <!--
       Deliberately NOT bumped alongside Version. AppConfiguration bakes this into an
       ExtensionInformationAttribute, and the Functions Worker SDK generates an inner project that
@@ -57,9 +57,9 @@
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
-      - Corrected an unresolved XML documentation reference in AzureFunctions.Worker.Extensions.AspNetCore
-      - No API or behaviour change otherwise; the build reports zero warnings, and warnings are errors
-        from this version on
+      - AzureTableCache.RemoveAllAsync(keyPattern) no longer throws "The batch contains no entity
+        operations" when the pattern matches nothing; clearing an empty cache is now a no-op, as the
+        key-list overload and the expired-entry cleanup already were
     </PackageReleaseNotes>
   </PropertyGroup>
 
