@@ -45,7 +45,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Matches the LICENSE file at the repository root; this previously claimed Apache-2.0. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>3.1.3</Version>
+    <Version>3.1.4</Version>
     <!--
       Deliberately NOT bumped alongside Version. AppConfiguration bakes this into an
       ExtensionInformationAttribute, and the Functions Worker SDK generates an inner project that
@@ -63,10 +63,6 @@
         expiration is refreshed with an unconditional metadata write, so a lost race is not reported
         as a failed dependency; payloads above 4 KiB are compressed with Brotli. Eviction by tag is a
         prefix purge of the whole application, and any other tag is logged and ignored.
-      - Microsoft.SourceLink.GitHub moves to 10.0.401. The version the SDK band carries depends on
-        Microsoft.Build.Tasks.Git 10.0.201, which sits in the one GHSA-23fw-v26w-5fgq range with no
-        patched release, and failed restore for every project. Build-time only, so no shipped package
-        changes.
       - No change to any existing package's API or behaviour.
     </PackageReleaseNotes>
   </PropertyGroup>

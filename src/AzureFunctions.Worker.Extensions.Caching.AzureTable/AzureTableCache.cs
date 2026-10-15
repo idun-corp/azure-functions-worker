@@ -131,6 +131,15 @@ internal sealed class AzureTableCache(
 
         await foreach (var page in pages.AsPages())
         {
+            // a pattern matching nothing still yields one empty page, and Azure Tables rejects an
+            // empty transaction with "The batch contains no entity operations". Clearing a cache
+            // that holds nothing is a normal call, so it has to be a no-op - same guard as
+            // DeleteExpiredEntries below.
+            if (page.Values.Count == 0)
+            {
+                continue;
+            }
+
             var actions = page.Values.Select(cache => new TableTransactionAction(TableTransactionActionType.Delete, cache));
 
             await this.tableClient.SubmitTransactionAsync(actions, cancellationToken);

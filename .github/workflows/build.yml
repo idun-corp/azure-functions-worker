@@ -11,7 +11,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Per RUN on push, per REF on pull request. A shared group holds one in-progress run and one
+  # pending one; a third arrival evicts the pending one. Keyed by ref, three merges inside one
+  # build duration therefore cancel the middle commit's run, leaving it with no artifacts and no
+  # tag - and deploys resolve by exact SHA, so that commit is silently undeployable. On a pull
+  # request superseding the in-flight run is the point, so that keeps the ref key.
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

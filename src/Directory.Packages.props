@@ -1,12 +1,5 @@
 <Project>
   <ItemGroup>
-    <!--
-      Pinned ahead of the SDK band deliberately. The band the SDK ships (10.0.201) depends on
-      Microsoft.Build.Tasks.Git 10.0.201, which sits in the one GHSA-23fw-v26w-5fgq range with no
-      patched release at all, so restore fails outright. 10.0.401 depends on a version above every
-      vulnerable range. Build-time only (PrivateAssets), so no shipped package is affected.
-      OSUI-4780.
-    -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
     <PackageReference Include="SonarAnalyzer.CSharp" Version="10.21.0.135717">
       <PrivateAssets>all</PrivateAssets>
