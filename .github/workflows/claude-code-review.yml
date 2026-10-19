@@ -10,7 +10,7 @@ on:
 jobs:
   claude-review:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       # write matches the shared workflow's template, and is not what makes --comment work: the
