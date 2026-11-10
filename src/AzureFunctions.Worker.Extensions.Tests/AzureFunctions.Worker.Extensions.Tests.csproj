@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AzureFunctions.Worker.Extensions.AppConfiguration.Host\AzureFunctions.Worker.Extensions.AppConfiguration.Host.csproj" />
+    <ProjectReference Include="..\AzureFunctions.Worker.Extensions.Caching.AzureTable\AzureFunctions.Worker.Extensions.Caching.AzureTable.csproj" />
     <ProjectReference Include="..\AzureFunctions.Worker.Extensions.Tests.FunctionApp\AzureFunctions.Worker.Extensions.Tests.FunctionApp.csproj" />
   </ItemGroup>
 

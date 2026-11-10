@@ -109,6 +109,14 @@
           "Azure.Core": "1.50.0"
         }
       },
+      "Azure.Data.Tables": {
+        "type": "Transitive",
+        "resolved": "12.11.0",
+        "contentHash": "MabH2HegMvZA1ocaMhEfW/idyTa3CoH64s43/V9/KFRGdVqEj0EETvd3ItDe6Bbs2teiR40KE9Kz9NLDc5DJJw==",
+        "dependencies": {
+          "Azure.Core": "1.44.1"
+        }
+      },
       "Azure.Identity": {
         "type": "Transitive",
         "resolved": "1.13.1",
@@ -483,6 +491,12 @@
           "Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore": "[2.1.0, )"
         }
       },
+      "azurefunctions.worker.extensions.caching.azuretable": {
+        "type": "Project",
+        "dependencies": {
+          "Azure.Data.Tables": "[12.11.0, )"
+        }
+      },
       "azurefunctions.worker.extensions.tests.functionapp": {
         "type": "Project",
         "dependencies": {
@@ -603,6 +617,14 @@
         "contentHash": "qUMrJRiVJ9DAsJ3JEyThb+/CiVee4Ow2iy5BDdVoaBUqEyG0sZPyClSn+34I+CGKn8r5esOi3qIOTrcy8CNHOg==",
         "dependencies": {
           "Azure.Core": "1.50.0"
+        }
+      },
+      "Azure.Data.Tables": {
+        "type": "Transitive",
+        "resolved": "12.11.0",
+        "contentHash": "MabH2HegMvZA1ocaMhEfW/idyTa3CoH64s43/V9/KFRGdVqEj0EETvd3ItDe6Bbs2teiR40KE9Kz9NLDc5DJJw==",
+        "dependencies": {
+          "Azure.Core": "1.44.1"
         }
       },
       "Azure.Identity": {
@@ -1274,6 +1296,12 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore": "[2.1.0, )"
+        }
+      },
+      "azurefunctions.worker.extensions.caching.azuretable": {
+        "type": "Project",
+        "dependencies": {
+          "Azure.Data.Tables": "[12.11.0, )"
         }
       },
       "azurefunctions.worker.extensions.tests.functionapp": {

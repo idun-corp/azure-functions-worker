@@ -15,4 +15,8 @@
     <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="AzureFunctions.Worker.Extensions.Tests" />
+  </ItemGroup>
+
 </Project>
