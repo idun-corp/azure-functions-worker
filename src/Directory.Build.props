@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
     <!-- LTS releases only -->
@@ -45,7 +45,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Matches the LICENSE file at the repository root; this previously claimed Apache-2.0. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>3.1.3</Version>
+    <Version>3.1.4</Version>
     <!--
       Deliberately NOT bumped alongside Version. AppConfiguration bakes this into an
       ExtensionInformationAttribute, and the Functions Worker SDK generates an inner project that
@@ -57,9 +57,9 @@
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
-      - AzureTableCache.RemoveAllAsync(keyPattern) no longer throws "The batch contains no entity
-        operations" when the pattern matches nothing; clearing an empty cache is now a no-op, as the
-        key-list overload and the expired-entry cleanup already were
+      - AzureTableCache GetAsync, GetJsonAsync and RefreshAsync now look keys up by exact match. A key
+        ending in '*' was read as a prefix, so HybridCache's global invalidation key "__MSFT_HCT__*"
+        returned an unrelated tag row and every L2 entry older than it was treated as invalidated
     </PackageReleaseNotes>
   </PropertyGroup>
 
