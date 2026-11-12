@@ -45,7 +45,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Matches the LICENSE file at the repository root; this previously claimed Apache-2.0. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>3.1.4</Version>
+    <Version>3.1.5</Version>
     <!--
       Deliberately NOT bumped alongside Version. AppConfiguration bakes this into an
       ExtensionInformationAttribute, and the Functions Worker SDK generates an inner project that
@@ -57,9 +57,8 @@
     <FileVersion>$(Version)</FileVersion>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <PackageReleaseNotes>
-      - AzureTableCache GetAsync, GetJsonAsync and RefreshAsync now look keys up by exact match. A key
-        ending in '*' was read as a prefix, so HybridCache's global invalidation key "__MSFT_HCT__*"
-        returned an unrelated tag row and every L2 entry older than it was treated as invalidated
+      - AzureTableCache stores a value over 64 KiB across several table properties. A larger value
+        failed every write with PropertyValueTooLarge, so it was never cached in the table
     </PackageReleaseNotes>
   </PropertyGroup>
 
