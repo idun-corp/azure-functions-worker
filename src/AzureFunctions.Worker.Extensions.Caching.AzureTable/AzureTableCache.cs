@@ -222,6 +222,38 @@ internal sealed class AzureTableCache(
 
     #endregion
 
+    // HybridCache reads its global invalidation key "__MSFT_HCT__*" as a single key, so '*' must not turn it into a prefix match.
+    internal string BuildFilter(string keyPattern, bool exactKey = false)
+    {
+        var now = DateTime.UtcNow;
+
+        var stringBuilder = new StringBuilder(
+            $"{nameof(Cache.PartitionKey)} eq '{cacheOptions.Value.ApplicationName}'" +
+            $" and {nameof(Cache.ExpiresAtTime)} gt datetime'{now:yyyy-MM-dd'T'HH:mm:ssZ}'");
+
+        if (!exactKey && keyPattern.EndsWith('*'))
+        {
+            var startsWithPhrase = keyPattern[..keyPattern.IndexOf('*')];
+
+            if (!string.IsNullOrEmpty(startsWithPhrase))
+            {
+                var startsWithEndPhrase = startsWithPhrase[0..^1] + (char) (startsWithPhrase[^1] + 1);
+
+                // table storage doesn't support StartsWith Comparison Operators
+                // so we simulate GreaterThanOrEqual and LessThan comparisons on string range
+                stringBuilder.Append(
+                    $" and {nameof(Cache.RowKey)} ge '{startsWithPhrase}'" +
+                    $" and {nameof(Cache.RowKey)} lt '{startsWithEndPhrase}'");
+            }
+        }
+        else
+        {
+            stringBuilder.Append($" and {nameof(Cache.RowKey)} eq '{keyPattern}'");
+        }
+
+        return stringBuilder.ToString();
+    }
+
     private static TableClient CreateTableClient(string connectionString, string tableName)
     {
         var retryPolicy = new DefaultRetryPolicy();
@@ -289,44 +321,13 @@ internal sealed class AzureTableCache(
     private async Task<Cache?> RetrieveAsync(string key, IEnumerable<string>? select = null, CancellationToken cancellationToken = default)
     {
         var response = this.tableClient
-            .QueryAsync<Cache>(this.BuildFilter(key), maxPerPage: 1, select, cancellationToken)
+            .QueryAsync<Cache>(this.BuildFilter(key, exactKey: true), maxPerPage: 1, select, cancellationToken)
             .AsPages()
             .GetAsyncEnumerator();
 
         await response.MoveNextAsync();
 
         return response.Current.Values.FirstOrDefault();
-    }
-
-    private string BuildFilter(string keyPattern)
-    {
-        var now = DateTime.UtcNow;
-
-        var stringBuilder = new StringBuilder(
-            $"{nameof(Cache.PartitionKey)} eq '{cacheOptions.Value.ApplicationName}'" +
-            $" and {nameof(Cache.ExpiresAtTime)} gt datetime'{now:yyyy-MM-dd'T'HH:mm:ssZ}'");
-
-        if (keyPattern.EndsWith('*'))
-        {
-            var startsWithPhrase = keyPattern[..keyPattern.IndexOf('*')];
-
-            if (!string.IsNullOrEmpty(startsWithPhrase))
-            {
-                var startsWithEndPhrase = startsWithPhrase[0..^1] + (char) (startsWithPhrase[^1] + 1);
-
-                // table storage doesn't support StartsWith Comparison Operators
-                // so we simulate GreaterThanOrEqual and LessThan comparisons on string range
-                stringBuilder.Append(
-                    $" and {nameof(Cache.RowKey)} ge '{startsWithPhrase}'" +
-                    $" and {nameof(Cache.RowKey)} lt '{startsWithEndPhrase}'");
-            }
-        }
-        else
-        {
-            stringBuilder.Append($" and {nameof(Cache.RowKey)} eq '{keyPattern}'");
-        }
-
-        return stringBuilder.ToString();
     }
 
     private void ScheduleExpiredCacheCleanup()
