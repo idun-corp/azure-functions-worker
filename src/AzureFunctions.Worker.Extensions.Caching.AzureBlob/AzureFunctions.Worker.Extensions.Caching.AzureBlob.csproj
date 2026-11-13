@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>AzureFunctions.Worker.Extensions.Caching.AzureBlob</PackageId>
+    <Description>Distributed caching using Azure Blob Storage as the backend provider for IDistributedCache, and as an IOutputCacheStore for ASP.NET Core output caching. Suited to payloads too large for Azure Table Storage.</Description>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="icon.png" Pack="true" PackagePath="\" />
+    <None Include="readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.29.2" />
+    <!--
+      Bulk delete only. The batch endpoint takes 256 subrequests per call, against 100 for a table
+      entity-group transaction, and is the difference between one request and dozens when a prefix
+      purge or an expiry sweep clears a large container.
+    -->
+    <PackageReference Include="Azure.Storage.Blobs.Batch" Version="12.26.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>AzureFunctions.Worker.Extensions.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>
