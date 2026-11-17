@@ -87,13 +87,6 @@ public class AzureBlobOutputCacheStoreTests
         Assert.DoesNotContain(fixture.Deleted, name => name.StartsWith("Tests/distributed", StringComparison.Ordinal));
     }
 
-    private sealed class TestTimeProvider(DateTimeOffset now) : TimeProvider
-    {
-        public DateTimeOffset UtcNow { get; set; } = now;
-
-        public override DateTimeOffset GetUtcNow() => this.UtcNow;
-    }
-
     private sealed class Fixture
     {
         private readonly Dictionary<string, Mock<BlobClient>> blobs = new(StringComparer.Ordinal);

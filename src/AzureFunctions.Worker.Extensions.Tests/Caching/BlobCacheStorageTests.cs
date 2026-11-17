@@ -203,13 +203,6 @@ public class BlobCacheStorageTests
         Assert.True(condition(), "the background operation did not run");
     }
 
-    private sealed class TestTimeProvider(DateTimeOffset now) : TimeProvider
-    {
-        public DateTimeOffset UtcNow { get; set; } = now;
-
-        public override DateTimeOffset GetUtcNow() => this.UtcNow;
-    }
-
     private sealed class Fixture
     {
         private readonly Dictionary<string, Mock<BlobClient>> blobs = new(StringComparer.Ordinal);
