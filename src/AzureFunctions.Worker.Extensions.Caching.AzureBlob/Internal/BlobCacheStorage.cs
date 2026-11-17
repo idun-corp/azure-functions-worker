@@ -427,6 +427,8 @@ internal sealed class BlobCacheStorage : IDisposable
             return 0;
         }
 
+        var deleted = 0;
+
         if (!this.options.UseBatchDelete || names.Count == 1)
         {
             foreach (var name in names)
@@ -435,6 +437,8 @@ internal sealed class BlobCacheStorage : IDisposable
                 {
                     await this.container.GetBlobClient(name)
                         .DeleteAsync(cancellationToken: cancellationToken);
+
+                    deleted++;
                 }
                 catch (RequestFailedException exception) when (IsMissing(exception))
                 {
@@ -442,25 +446,25 @@ internal sealed class BlobCacheStorage : IDisposable
                 }
             }
 
-            return names.Count;
+            return deleted;
         }
-
-        var deleted = 0;
 
         foreach (var chunk in names.Chunk(BatchSize))
         {
             var batch = this.batchClient.CreateBatch();
+            var responses = new List<Response>(chunk.Length);
 
             foreach (var name in chunk)
             {
-                batch.DeleteBlob(this.container.GetBlobClient(name).Uri);
+                responses.Add(batch.DeleteBlob(this.container.GetBlobClient(name).Uri));
             }
 
             // A blob batch is not atomic and reports per subrequest. Another instance deleting the
             // same entry concurrently is expected, so a failed subrequest must not fail the batch.
             await this.batchClient.SubmitBatchAsync(batch, throwOnAnyFailure: false, cancellationToken);
 
-            deleted += chunk.Length;
+            // Each subrequest carries its own status, so the count is what went, not what was sent.
+            deleted += responses.Count(response => !response.IsError);
         }
 
         return deleted;
