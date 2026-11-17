@@ -27,6 +27,10 @@ internal sealed class BlobCacheStorage : IDisposable
     private readonly BlobContainerClient container;
     private readonly BlobBatchClient batchClient;
     private readonly CancellationTokenSource backgroundCancellation = new();
+
+    // Captured once. Reading Token off the source after Dispose throws, and
+    // ScheduleExpiredCleanup runs at the top of every read, write and remove.
+    private readonly CancellationToken backgroundToken;
     private readonly SemaphoreSlim containerGate = new(1, 1);
 
 #if NET9_0_OR_GREATER
@@ -38,7 +42,7 @@ internal sealed class BlobCacheStorage : IDisposable
     private readonly string namePrefix;
 
     private bool containerCreated;
-    private DateTimeOffset? lastExpirationScan;
+    private long lastExpirationScanTicks = long.MinValue;
 
     public BlobCacheStorage(
         IOptions<AzureBlobCacheOptions> cacheOptions,
@@ -71,6 +75,7 @@ internal sealed class BlobCacheStorage : IDisposable
         BlobBatchClient? batchClient)
     {
         this.options = cacheOptions.Value;
+        this.backgroundToken = this.backgroundCancellation.Token;
 
         // Each face gets its own segment under the application prefix. Without it a prefix purge
         // issued by the output cache store would take the distributed cache entries with it.
@@ -643,7 +648,7 @@ internal sealed class BlobCacheStorage : IDisposable
                 return;
             }
 
-            this.lastExpirationScan = now;
+            Volatile.Write(ref this.lastExpirationScanTicks, now.UtcTicks);
         }
 
         this.RunInBackground(this.DeleteExpiredEntriesAsync, "sweeping expired entries");
@@ -651,8 +656,11 @@ internal sealed class BlobCacheStorage : IDisposable
 
     private bool ShouldScan(DateTimeOffset now)
     {
-        return this.lastExpirationScan is not { } last ||
-            (now - last) > this.options.ExpiredItemsDeletionInterval;
+        // Read without the lock on the fast path, so it has to be a single word to stay untearable.
+        var last = Volatile.Read(ref this.lastExpirationScanTicks);
+
+        return last == long.MinValue ||
+            (now - new DateTimeOffset(last, TimeSpan.Zero)) > this.options.ExpiredItemsDeletionInterval;
     }
 
     private async Task DeleteExpiredEntriesAsync(CancellationToken cancellationToken)
@@ -699,7 +707,7 @@ internal sealed class BlobCacheStorage : IDisposable
         string operation,
         string? target = null)
     {
-        var cancellationToken = this.backgroundCancellation.Token;
+        var cancellationToken = this.backgroundToken;
 
         if (cancellationToken.IsCancellationRequested)
         {
@@ -724,6 +732,16 @@ internal sealed class BlobCacheStorage : IDisposable
                     this.logger.LogWarning(
                         exception,
                         "Cache maintenance failed during {Operation} for {Target}",
+                        operation,
+                        target);
+                }
+                catch (Exception exception)
+                {
+                    // Nothing here is awaited by a caller, so anything not caught above would be an
+                    // unobserved task exception that no one ever sees.
+                    this.logger.LogWarning(
+                        exception,
+                        "Cache maintenance failed unexpectedly during {Operation} for {Target}",
                         operation,
                         target);
                 }
