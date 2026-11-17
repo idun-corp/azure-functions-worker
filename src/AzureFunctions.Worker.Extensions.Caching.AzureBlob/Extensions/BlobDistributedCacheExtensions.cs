@@ -4,7 +4,12 @@
 /// JSON and bulk operations the <see cref="IDistributedCache"/> contract does not cover, available
 /// when the cache is backed by Azure Blob Storage.
 /// </summary>
-public static class DistributedCacheExtensions
+/// <remarks>
+/// Not named DistributedCacheExtensions: the Azure Table cache ships a class of that name in this
+/// same namespace with the same method names, and an application referencing both packages during
+/// a migration would get an ambiguous call on every one of them.
+/// </remarks>
+public static class BlobDistributedCacheExtensions
 {
     /// <summary>
     /// Gets a value and deserializes it.
