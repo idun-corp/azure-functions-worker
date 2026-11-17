@@ -18,7 +18,7 @@ internal sealed class ContainerCreatingRetryPolicy : RetryPolicy
     /// <summary>
     /// Handlers keyed by the storage error code that triggers them.
     /// </summary>
-    public Dictionary<string, Func<CancellationToken, Task>> ErrorHandlers { get; } = [];
+    public Dictionary<string, Func<CancellationToken, Task<bool>>> ErrorHandlers { get; } = [];
 
     /// <inheritdoc />
     protected override async ValueTask<bool> ShouldRetryAsync(HttpMessage message, Exception? exception)
@@ -65,8 +65,9 @@ internal sealed class ContainerCreatingRetryPolicy : RetryPolicy
             return false;
         }
 
-        await handler(cancellationToken);
-
-        return true;
+        // Retrying only when the handler changed something keeps a ContainerNotFound that outlives
+        // the create from retrying forever: this override runs ahead of the base policy's own
+        // retry count, so a bare true would never consult it.
+        return await handler(cancellationToken);
     }
 }

@@ -587,11 +587,17 @@ internal sealed class BlobCacheStorage : IDisposable
         return new BlobCacheReadResult(name, entry, payload);
     }
 
-    private async Task EnsureContainerAsync(BlobServiceClient serviceClient, CancellationToken cancellationToken)
+    /// <summary>
+    /// Creates the container if this instance has not already done so.
+    /// </summary>
+    /// <param name="serviceClient">Service client</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Whether this call created it, and the failed request is therefore worth retrying</returns>
+    private async Task<bool> EnsureContainerAsync(BlobServiceClient serviceClient, CancellationToken cancellationToken)
     {
         if (this.containerCreated)
         {
-            return;
+            return false;
         }
 
         await this.containerGate.WaitAsync(cancellationToken);
@@ -600,13 +606,15 @@ internal sealed class BlobCacheStorage : IDisposable
         {
             if (this.containerCreated)
             {
-                return;
+                return false;
             }
 
             await serviceClient.GetBlobContainerClient(this.options.ContainerName)
                 .CreateIfNotExistsAsync(cancellationToken: cancellationToken);
 
             this.containerCreated = true;
+
+            return true;
         }
         finally
         {
