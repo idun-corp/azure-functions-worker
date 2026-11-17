@@ -79,8 +79,9 @@ internal static class BlobCachePayload
     /// <param name="length">Payload length before compression, used to size the buffer</param>
     /// <param name="payload">The restored payload</param>
     /// <returns>
-    /// Whether the encoding was one this version understands. An unrecognised encoding is a miss
-    /// rather than an error, so the default can be changed without stranding existing entries.
+    /// Whether the stored bytes could be restored. An unrecognised encoding and a corrupt payload
+    /// are both misses rather than errors, so the default can be changed without stranding existing
+    /// entries and a half-written blob cannot fail a request.
     /// </returns>
     public static bool TryDecompress(byte[] stored, string? encoding, long length, out byte[] payload)
     {
@@ -98,18 +99,27 @@ internal static class BlobCachePayload
             return false;
         }
 
-        using var source = new MemoryStream(stored, writable: false);
-        using var decompressor = encoding == GZipEncoding
-            ? new GZipStream(source, CompressionMode.Decompress)
-            : (Stream) new BrotliStream(source, CompressionMode.Decompress);
+        try
+        {
+            using var source = new MemoryStream(stored, writable: false);
+            using var decompressor = encoding == GZipEncoding
+                ? new GZipStream(source, CompressionMode.Decompress)
+                : (Stream) new BrotliStream(source, CompressionMode.Decompress);
 
-        using var destination = new MemoryStream(length > 0 && length <= int.MaxValue ? (int) length : 0);
+            using var destination = new MemoryStream(length > 0 && length <= int.MaxValue ? (int) length : 0);
 
-        decompressor.CopyTo(destination);
+            decompressor.CopyTo(destination);
 
-        payload = destination.ToArray();
+            payload = destination.ToArray();
 
-        return true;
+            return true;
+        }
+        catch (InvalidDataException)
+        {
+            // Truncated or corrupt bytes. A miss like an unrecognised encoding, so the entry is
+            // dropped and refetched instead of failing the request that asked for it.
+            return false;
+        }
     }
 
     private static Stream Create(Stream destination, BlobCacheCompression compression)
