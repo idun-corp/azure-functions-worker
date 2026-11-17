@@ -32,7 +32,6 @@ builder.Services.AddOutputCache(options =>
 
 builder.Services.AddAzureBlobOutputCache(cacheOptions =>
 {
-    cacheOptions.ContainerName = "response-cache";
     cacheOptions.ApplicationName = "MyApp";
 });
 
@@ -41,6 +40,13 @@ app.UseOutputCache();
 
 Everything ASP.NET Core output caching provides — named policies, vary-by rules, automatic
 `If-None-Match` revalidation and resource locking against cache stampedes — applies unchanged.
+
+### The two faces share one set of options
+
+`AddAzureBlobCache` and `AddAzureBlobOutputCache` configure the **same** `AzureBlobCacheOptions`
+instance, so registering both means the last delegate to run wins for every option — including
+`ContainerName`. Only the blob name scope differs between them, and that is set by the library,
+not by configuration. Configure the options once rather than once per face.
 
 ### Eviction by tag is prefix purge only
 
