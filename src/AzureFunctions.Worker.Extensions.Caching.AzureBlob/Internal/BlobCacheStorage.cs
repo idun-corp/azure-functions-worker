@@ -202,7 +202,7 @@ internal sealed class BlobCacheStorage : IDisposable
     /// </summary>
     /// <param name="key">Cache key</param>
     /// <param name="payload">Payload to store</param>
-    /// <param name="describe">Builds the entry from the compressed length and encoding</param>
+    /// <param name="describe">Builds the entry from the uncompressed length and encoding</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task that completes when the entry is stored</returns>
     public async Task WriteAsync(
@@ -226,7 +226,7 @@ internal sealed class BlobCacheStorage : IDisposable
     /// </summary>
     /// <param name="key">Cache key</param>
     /// <param name="payload">Payload to store</param>
-    /// <param name="describe">Builds the entry from the compressed length and encoding</param>
+    /// <param name="describe">Builds the entry from the uncompressed length and encoding</param>
     public void Write(string key, byte[] payload, Func<long, string?, BlobCacheEntry> describe)
     {
         this.ScheduleExpiredCleanup();
