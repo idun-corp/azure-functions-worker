@@ -109,7 +109,12 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
     /// <inheritdoc />
     public void Refresh(string key)
     {
-        this.RefreshAsync(key).GetAwaiter().GetResult();
+        var result = this.storage.ReadMetadata(key);
+
+        if (result is { } found)
+        {
+            this.RefreshIfDue(found.Name, found.Entry);
+        }
     }
 
     /// <inheritdoc />
@@ -209,12 +214,7 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
 
     internal async Task RemoveAllAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
     {
-        var names = keys
-            .Select(key => BlobCacheKeyEncoder.Encode(
-                key,
-                string.Concat(this.options.ApplicationName, "/", Scope),
-                this.options.MaxEncodedKeyLength))
-            .ToList();
+        var names = keys.Select(this.storage.BlobName).ToList();
 
         await this.storage.DeleteAsync(names, cancellationToken);
     }

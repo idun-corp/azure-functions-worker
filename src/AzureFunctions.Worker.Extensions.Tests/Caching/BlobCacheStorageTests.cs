@@ -262,10 +262,7 @@ public class BlobCacheStorageTests
 
         public string Name(string key)
         {
-            return BlobCacheKeyEncoder.Encode(
-                key,
-                string.Concat(this.options.ApplicationName, "/distributed"),
-                this.options.MaxEncodedKeyLength);
+            return this.Storage.BlobName(key);
         }
 
         public Mock<BlobClient> BlobFor(string key)

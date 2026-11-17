@@ -198,6 +198,36 @@ internal sealed class BlobCacheStorage : IDisposable
     }
 
     /// <summary>
+    /// Synchronous counterpart of <see cref="ReadMetadataAsync"/>.
+    /// </summary>
+    /// <param name="key">Cache key</param>
+    /// <returns>The blob name and entry, or null</returns>
+    public (string Name, BlobCacheEntry Entry)? ReadMetadata(string key)
+    {
+        this.ScheduleExpiredCleanup();
+
+        var name = this.BlobName(key);
+
+        try
+        {
+            var properties = this.container.GetBlobClient(name).GetProperties();
+
+            if (!BlobCacheEntry.TryParse(properties.Value.Metadata, out var entry) ||
+                !string.Equals(entry.Key, key, StringComparison.Ordinal) ||
+                entry.IsExpired(this.UtcNow))
+            {
+                return null;
+            }
+
+            return (name, entry);
+        }
+        catch (RequestFailedException exception) when (IsMissing(exception))
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Writes an entry, replacing any existing one.
     /// </summary>
     /// <param name="key">Cache key</param>
@@ -360,6 +390,23 @@ internal sealed class BlobCacheStorage : IDisposable
     public string ScopePrefix()
     {
         return string.Concat(this.namePrefix, "/");
+    }
+
+    /// <summary>
+    /// The blob name an entry is stored under.
+    /// </summary>
+    /// <remarks>
+    /// The scope layout and the key encoding live here and nowhere else, so a caller that needs a
+    /// name asks for one rather than rebuilding the prefix and drifting from it.
+    /// </remarks>
+    /// <param name="key">Cache key</param>
+    /// <returns>Blob name</returns>
+    public string BlobName(string key)
+    {
+        return BlobCacheKeyEncoder.Encode(
+            key,
+            this.namePrefix,
+            this.options.MaxEncodedKeyLength);
     }
 
     /// <summary>
@@ -538,14 +585,6 @@ internal sealed class BlobCacheStorage : IDisposable
         }
 
         return new BlobCacheReadResult(name, entry, payload);
-    }
-
-    private string BlobName(string key)
-    {
-        return BlobCacheKeyEncoder.Encode(
-            key,
-            this.namePrefix,
-            this.options.MaxEncodedKeyLength);
     }
 
     private async Task EnsureContainerAsync(BlobServiceClient serviceClient, CancellationToken cancellationToken)
