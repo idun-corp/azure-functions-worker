@@ -88,9 +88,12 @@ when storage is reclaimed, and setting it to `TimeSpan.Zero` hands that job to a
 A lifecycle policy is a safety net, not a mechanism: its conditions are measured in whole days and a
 change takes up to 24 hours to take effect, which is why read-time checking is not optional.
 
-**Sliding expiration is refreshed with a metadata-only write**, and never under an ETag
-precondition — a refresh that loses a race would otherwise surface as a failed 412 dependency for
-something that is not a failure. `SlidingExpirationRefreshThreshold` (default 0.5) skips the write
+**Sliding expiration is refreshed with a metadata-only write**, under the ETag the entry was read
+at. Set Blob Metadata replaces the whole metadata set from the read-time snapshot, so an
+unconditional refresh would put the old length and encoding back over a concurrent rewrite and leave
+that payload undecodable. Losing the race means the entry was just rewritten and its expiry already
+stands, so the 412 is a no-op rather than a logged dependency failure.
+`SlidingExpirationRefreshThreshold` (default 0.5) skips the write
 until the window is half spent, which removes most of the writes a hot key would otherwise pay for.
 
 **Payloads are compressed with Brotli above 4 KiB** by default. The encoding is recorded in private
