@@ -1,6 +1,6 @@
 # Working in this repository
 
-Isolated-worker Azure Functions extensions, published as nine packages on GitHub Packages:
+Isolated-worker Azure Functions extensions, published as ten packages on GitHub Packages:
 `AzureFunctions.Worker.Extensions.*` plus `DurableTask.Client.AzureStorage`. A **fork** of
 [nazar-kuzo/azure-functions-worker](https://github.com/nazar-kuzo/azure-functions-worker) — see
 *This is a fork* below, which affects both pull requests and package metadata.
@@ -54,12 +54,26 @@ so **every diagnostic is reported twice** — once per framework. Halve the coun
 anything from it.
 
 ```bash
-dotnet test src/AzureFunction.Worker.Extensions.slnx --no-build -c Release
+dotnet test src/AzureFunction.Worker.Extensions.slnx --no-build -c Release --filter "Category!=Integration"
 ```
 
-The whole suite is hermetic — `AzureFunctions.TestFramework` runs the real worker pipeline over an
-in-memory `TestServer`, with no Core Tools, no Docker and no TCP ports — so CI runs all of it with no
-category filter. There is nothing to exclude locally.
+Most of the suite is hermetic — `AzureFunctions.TestFramework` runs the real worker pipeline over an
+in-memory `TestServer`, with no Core Tools, no Docker and no TCP ports.
+
+The exception is `AzureBlobCacheIntegrationTests`, which needs **Azurite**. It is traited
+`Category=Integration` and CI excludes it with the filter above, so **match that filter locally** or
+those tests fail for want of a storage emulator rather than for a real reason. To run them:
+
+```bash
+azurite --silent --location /tmp/azurite --blobPort 10000 --queuePort 10001 --tablePort 10002
+```
+
+then `dotnet test … --filter "Category=Integration"`. They cover what a mock cannot: that the
+container is created lazily off the `ContainerNotFound` response rather than eagerly, that a listing
+follows its continuation past the service's 5000-blob page, that the blob batch endpoint behaves, and
+that a concurrent writer never leaves a reader with a torn payload. Each test uses its own container
+and deletes it afterwards, so a failure does not poison the next run. Budget about a minute: the
+paging test writes 5100 blobs.
 
 ## Warnings are errors, including a NuGet advisory
 

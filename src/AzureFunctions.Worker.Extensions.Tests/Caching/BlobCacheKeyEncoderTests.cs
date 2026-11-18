@@ -1,0 +1,182 @@
+﻿using System.Text;
+using AzureFunctions.Worker.Extensions.Caching.AzureBlob.Internal;
+
+namespace AzureFunctions.Worker.Extensions.Tests.Caching;
+
+public class BlobCacheKeyEncoderTests
+{
+    private const string Prefix = "App/distributed";
+
+    private const int MaxLength = 700;
+
+    private static readonly string[] SampleKeys =
+    [
+        "simple",
+        "v2|3f2504e04f8911d39a0c0305e82c3301|hvac|Hourly|2026-01-01T00:00:00.0000000Z|p=5000|n=1",
+        "with spaces and punctuation!?#",
+        "slashes/and\\backslashes",
+        "percent%25already",
+        "tilde~marker",
+        "trailing.dot.",
+        "unicode-åäö-中文",
+        "emoji-\U0001F600",
+        "control",
+        string.Empty,
+    ];
+
+    public static TheoryData<string> Keys => new(SampleKeys);
+
+    [Theory]
+    [MemberData(nameof(Keys))]
+    public void Encode_ProducesALegalBlobName(string key)
+    {
+        var name = BlobCacheKeyEncoder.Encode(key, Prefix, MaxLength);
+
+        Assert.StartsWith(Prefix + "/", name, StringComparison.Ordinal);
+        Assert.InRange(name.Length, 1, 1024);
+        Assert.DoesNotContain('\\', name);
+        Assert.DoesNotContain('?', name);
+        Assert.DoesNotContain('#', name);
+        Assert.All(name, character => Assert.False(char.IsControl(character)));
+
+        // A blob name may not end in a dot or a slash. The key itself contributes no slash at all:
+        // the only ones present are the separators inside the prefix and after it, so the key can
+        // never introduce a path segment of its own.
+        Assert.False(name.EndsWith('.'));
+        Assert.False(name.EndsWith('/'));
+        Assert.Equal(
+            Prefix.Count(character => character == '/') + 1,
+            name.Count(character => character == '/'));
+    }
+
+    [Theory]
+    [MemberData(nameof(Keys))]
+    public void EncodeKeyForMetadata_RoundTrips(string key)
+    {
+        var encoded = BlobCacheKeyEncoder.EncodeKeyForMetadata(key);
+
+        // Metadata values have to be ASCII, whatever the key contained.
+        Assert.All(encoded, character => Assert.True(char.IsAscii(character)));
+        Assert.True(BlobCacheKeyEncoder.TryDecodeKeyFromMetadata(encoded, out var decoded));
+        Assert.Equal(key, decoded);
+    }
+
+    [Fact]
+    public void TryDecodeKeyFromMetadata_RejectsMalformedValues()
+    {
+        Assert.False(BlobCacheKeyEncoder.TryDecodeKeyFromMetadata(null, out _));
+        Assert.False(BlobCacheKeyEncoder.TryDecodeKeyFromMetadata("a", out _));
+        Assert.False(BlobCacheKeyEncoder.TryDecodeKeyFromMetadata("not base64 url!", out _));
+
+        // An empty value is the empty key, not a malformed one. Absent metadata is the failure, and
+        // that is what null stands for above.
+        Assert.True(BlobCacheKeyEncoder.TryDecodeKeyFromMetadata(string.Empty, out var empty));
+        Assert.Equal(string.Empty, empty);
+    }
+
+    [Fact]
+    public void Encode_IsInjective()
+    {
+        var keys = new List<string>(SampleKeys)
+        {
+            "a", "a%41", "a/b", "a%2Fb", "ab", "a\u0000b", "aA",
+        };
+
+        var names = keys.Select(key => BlobCacheKeyEncoder.Encode(key, Prefix, MaxLength)).ToList();
+
+        Assert.Equal(names.Count, names.Distinct(StringComparer.Ordinal).Count());
+    }
+
+    [Theory]
+    [InlineData("a", "ab")]
+    [InlineData("a", "a%41")]
+    [InlineData("v2|owner", "v2|owner|hvac")]
+    [InlineData("slash/", "slash/deeper")]
+    [InlineData("å", "åä")]
+    [InlineData("b", "ab")]
+    public void Encode_PreservesPrefixRelationships(string prefix, string key)
+    {
+        var encodedPrefix = BlobCacheKeyEncoder.EncodePrefix(prefix, Prefix, MaxLength);
+        var encodedKey = BlobCacheKeyEncoder.Encode(key, Prefix, MaxLength);
+
+        // The pair ("a", "a%41") is the adversarial one: an encoder that left "%" alone would make
+        // the literal key "a%41" indistinguishable from the escaped form of "aA".
+        Assert.Equal(
+            key.StartsWith(prefix, StringComparison.Ordinal),
+            encodedKey.StartsWith(encodedPrefix, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Encode_TruncatesLongKeysWithoutSplittingAnEscapeSequence()
+    {
+        var key = string.Concat(Enumerable.Repeat("å", 600));
+
+        var name = BlobCacheKeyEncoder.Encode(key, Prefix, MaxLength);
+        var encoded = name[(Prefix.Length + 1)..];
+
+        // Backing off a boundary can shed one or two characters, so the name lands at or just under
+        // the limit rather than exactly on it.
+        Assert.InRange(encoded.Length, MaxLength - 2, MaxLength);
+
+        var head = encoded[..^BlobCacheKeyEncoder.HashSuffixLength];
+
+        // Every "%" left in the head must still introduce a complete sequence.
+        for (var index = 0; index < head.Length; index++)
+        {
+            if (head[index] == '%')
+            {
+                Assert.True(index + 2 < head.Length, "an escape sequence was cut in half");
+            }
+        }
+    }
+
+    [Fact]
+    public void Encode_DistinguishesKeysThatShareATruncatedPrefix()
+    {
+        var shared = string.Concat(Enumerable.Repeat("x", 900));
+
+        var first = BlobCacheKeyEncoder.Encode(shared + "-one", Prefix, MaxLength);
+        var second = BlobCacheKeyEncoder.Encode(shared + "-two", Prefix, MaxLength);
+
+        Assert.NotEqual(first, second);
+        Assert.Equal(Prefix.Length + 1 + MaxLength, first.Length);
+    }
+
+    [Fact]
+    public void Encode_KeepsTheLongestPossibleNameWithinTheServiceLimit()
+    {
+        // 1024 characters is the documented maximum, and the options validator is what normally
+        // enforces the relationship. This pins the arithmetic it relies on.
+        var applicationName = new string('a', 64);
+        var prefix = string.Concat(applicationName, "/", "distributed");
+        var key = new string('å', 2000);
+
+        var name = BlobCacheKeyEncoder.Encode(key, prefix, MaxLength);
+
+        Assert.True(name.Length <= 1024, $"blob name was {name.Length} characters");
+    }
+
+    [Fact]
+    public void Encode_LeavesUnreservedCharactersAlone()
+    {
+        const string Unreserved = "ABCXYZabcxyz0189-_";
+
+        var name = BlobCacheKeyEncoder.Encode(Unreserved, Prefix, MaxLength);
+
+        Assert.Equal(string.Concat(Prefix, "/", Unreserved), name);
+    }
+
+    [Fact]
+    public void Encode_EscapesEachUtf8ByteSeparately()
+    {
+        // One non-ASCII character becomes one escape per UTF-8 byte, which is what keeps the
+        // encoding injective across characters of different widths.
+        var name = BlobCacheKeyEncoder.Encode("å", Prefix, MaxLength);
+        var expected = string.Concat(
+            Prefix,
+            "/",
+            string.Concat(Encoding.UTF8.GetBytes("å").Select(value => $"%{value:X2}")));
+
+        Assert.Equal(expected, name);
+    }
+}
