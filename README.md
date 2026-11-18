@@ -29,6 +29,12 @@ Boost your productivity with better ASP.NET Core framework integration like in o
 - JSON serialization extensions with host `System.Text.Json` serializer options as default
 - Search cache entries or bulk set/delete operations support
 
+## [Distributed and output caching with Azure Blob storage](src/AzureFunctions.Worker.Extensions.Caching.AzureBlob/readme.md)
+- Use Azure Blob as distributed cache provider, for payloads past the 1 MiB an Azure Table entity holds
+- Full support for `IDistributedCache` interface, with the same JSON and search extensions
+- Also an `IOutputCacheStore`, so ASP.NET Core output caching is shared across instances
+- Brotli compression above 4 KiB, and expiry enforced on read rather than by a lifecycle policy
+
 # 🔴Migration to v2 Azure Functions SDK🔴
 
 There are some changes in the API for bootstrapping worker, therefore extensions should be registered differently,
