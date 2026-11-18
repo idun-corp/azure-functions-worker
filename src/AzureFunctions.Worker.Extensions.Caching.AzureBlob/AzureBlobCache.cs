@@ -1,4 +1,5 @@
-﻿using AzureFunctions.Worker.Extensions.Caching.AzureBlob.Internal;
+﻿using Azure;
+using AzureFunctions.Worker.Extensions.Caching.AzureBlob.Internal;
 
 namespace Microsoft.Extensions.Caching.Distributed;
 
@@ -57,7 +58,7 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
             return null;
         }
 
-        this.RefreshIfDue(result.Name, result.Entry);
+        this.RefreshIfDue(result.Name, result.Entry, result.ETag);
 
         return result.Payload;
     }
@@ -72,7 +73,7 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
             return null;
         }
 
-        this.RefreshIfDue(result.Name, result.Entry);
+        this.RefreshIfDue(result.Name, result.Entry, result.ETag);
 
         return result.Payload;
     }
@@ -102,7 +103,7 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
 
         if (result is { } found)
         {
-            this.RefreshIfDue(found.Name, found.Entry);
+            this.RefreshIfDue(found.Name, found.Entry, found.ETag);
         }
     }
 
@@ -113,7 +114,7 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
 
         if (result is { } found)
         {
-            this.RefreshIfDue(found.Name, found.Entry);
+            this.RefreshIfDue(found.Name, found.Entry, found.ETag);
         }
     }
 
@@ -290,11 +291,11 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
             encoding);
     }
 
-    private void RefreshIfDue(string name, BlobCacheEntry entry)
+    private void RefreshIfDue(string name, BlobCacheEntry entry, ETag etag)
     {
         if (entry.ShouldRefresh(this.storage.UtcNow, this.options.SlidingExpirationRefreshThreshold))
         {
-            this.storage.ScheduleRefresh(name, entry);
+            this.storage.ScheduleRefresh(name, entry, etag);
         }
     }
 }

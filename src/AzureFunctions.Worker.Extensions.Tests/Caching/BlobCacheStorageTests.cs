@@ -4,7 +4,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using AzureFunctions.Worker.Extensions.Caching.AzureBlob.Internal;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace AzureFunctions.Worker.Extensions.Tests.Caching;
@@ -130,7 +130,7 @@ public class BlobCacheStorageTests
     }
 
     [Fact]
-    public async Task ReadAsync_RefreshesWithoutRequestConditionsOnceTheThresholdIsReached()
+    public async Task ReadAsync_RefreshesUnderTheETagItReadOnceTheThresholdIsReached()
     {
         var fixture = new Fixture();
 
@@ -141,14 +141,46 @@ public class BlobCacheStorageTests
 
         await WaitUntil(() => fixture.RefreshedMetadata.Count > 0);
 
-        // The regression guard: a refresh under an ETag precondition loses races under concurrency
-        // and reports each loss as a failed 412 dependency for something that is not a failure.
-        Assert.All(fixture.RefreshConditions, conditions => Assert.Null(conditions));
+        // The regression guard: Set Blob Metadata replaces the whole set from the read-time
+        // snapshot, so without the precondition a refresh puts the old length and encoding back
+        // over a concurrent rewrite and leaves that payload undecodable.
+        var conditions = Assert.Single(fixture.RefreshConditions);
+
+        Assert.NotNull(conditions);
+        Assert.Equal(Fixture.StoredETag, conditions.IfMatch);
 
         var refreshed = fixture.RefreshedMetadata.Single();
 
         Assert.True(BlobCacheEntry.TryParse(refreshed, out var entry));
         Assert.Equal(fixture.Time.UtcNow.AddMinutes(10), entry.ExpiresAt);
+    }
+
+    [Fact]
+    public async Task ReadAsync_DoesNotReportARefreshThatLostItsRaceAsAFailure()
+    {
+        var fixture = new Fixture();
+
+        fixture.Store(Key, Encoding.UTF8.GetBytes("fresh"), sliding: TimeSpan.FromMinutes(10));
+        fixture.Time.UtcNow = Now.AddMinutes(6);
+
+        var attempted = false;
+
+        fixture.BlobFor(Key)
+            .Setup(blob => blob.SetMetadataAsync(
+                It.IsAny<IDictionary<string, string>>(),
+                It.IsAny<BlobRequestConditions>(),
+                It.IsAny<CancellationToken>()))
+            .Callback(() => attempted = true)
+            .ThrowsAsync(new RequestFailedException(412, "precondition failed"));
+
+        Assert.NotNull(await fixture.Cache.GetAsync(Key));
+
+        await WaitUntil(() => attempted);
+        await Task.Delay(100);
+
+        // Another writer got there first, so its expiry already stands. Logging that as a failed
+        // dependency would put a steady stream of non-failures into the app's telemetry.
+        Assert.Empty(fixture.Warnings);
     }
 
     [Fact]
@@ -248,10 +280,12 @@ public class BlobCacheStorageTests
                 Options.Create(this.options),
                 "distributed",
                 this.Time,
-                NullLogger.Instance,
+                new RecordingLogger(this.Warnings),
                 this.Container.Object,
                 batchClient: null);
         }
+
+        public static ETag StoredETag => new("\"stored\"");
 
         public Mock<BlobContainerClient> Container { get; } = new();
 
@@ -271,6 +305,8 @@ public class BlobCacheStorageTests
         public List<BlobRequestConditions?> RefreshConditions { get; } = [];
 
         public List<BlobUploadOptions> Uploads { get; } = [];
+
+        public List<string> Warnings { get; } = [];
 
         public string Name(string key)
         {
@@ -348,7 +384,9 @@ public class BlobCacheStorageTests
                     payload.Length,
                     encoding);
 
-            var details = BlobsModelFactory.BlobDownloadDetails(metadata: entry.ToMetadata());
+            var details = BlobsModelFactory.BlobDownloadDetails(
+                metadata: entry.ToMetadata(),
+                eTag: StoredETag);
 
             var result = BlobsModelFactory.BlobDownloadResult(
                 content: BinaryData.FromBytes(payload),
@@ -357,6 +395,30 @@ public class BlobCacheStorageTests
             this.Blob(this.Name(key))
                 .Setup(blob => blob.DownloadContentAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Response.FromValue(result, Mock.Of<Response>()));
+        }
+    }
+
+    private sealed class RecordingLogger(List<string> warnings) : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel >= LogLevel.Warning)
+            {
+                lock (warnings)
+                {
+                    warnings.Add(formatter(state, exception));
+                }
+            }
         }
     }
 }

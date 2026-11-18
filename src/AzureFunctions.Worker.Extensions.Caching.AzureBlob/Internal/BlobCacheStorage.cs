@@ -137,7 +137,7 @@ internal sealed class BlobCacheStorage : IDisposable
             var response = await this.container.GetBlobClient(name)
                 .DownloadContentAsync(cancellationToken);
 
-            return this.Interpret(key, name, response.Value.Content, response.Value.Details.Metadata);
+            return this.Interpret(key, name, response.Value.Content, response.Value.Details);
         }
         catch (RequestFailedException exception) when (IsMissing(exception))
         {
@@ -160,7 +160,7 @@ internal sealed class BlobCacheStorage : IDisposable
         {
             var response = this.container.GetBlobClient(name).DownloadContent();
 
-            return this.Interpret(key, name, response.Value.Content, response.Value.Details.Metadata);
+            return this.Interpret(key, name, response.Value.Content, response.Value.Details);
         }
         catch (RequestFailedException exception) when (IsMissing(exception))
         {
@@ -173,8 +173,8 @@ internal sealed class BlobCacheStorage : IDisposable
     /// </summary>
     /// <param name="key">Cache key</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>The blob name and entry, or null</returns>
-    public async Task<(string Name, BlobCacheEntry Entry)?> ReadMetadataAsync(
+    /// <returns>The blob name, entry and ETag, or null</returns>
+    public async Task<(string Name, BlobCacheEntry Entry, ETag ETag)?> ReadMetadataAsync(
         string key,
         CancellationToken cancellationToken)
     {
@@ -194,7 +194,7 @@ internal sealed class BlobCacheStorage : IDisposable
                 return null;
             }
 
-            return (name, entry);
+            return (name, entry, properties.Value.ETag);
         }
         catch (RequestFailedException exception) when (IsMissing(exception))
         {
@@ -206,8 +206,8 @@ internal sealed class BlobCacheStorage : IDisposable
     /// Synchronous counterpart of <see cref="ReadMetadataAsync"/>.
     /// </summary>
     /// <param name="key">Cache key</param>
-    /// <returns>The blob name and entry, or null</returns>
-    public (string Name, BlobCacheEntry Entry)? ReadMetadata(string key)
+    /// <returns>The blob name, entry and ETag, or null</returns>
+    public (string Name, BlobCacheEntry Entry, ETag ETag)? ReadMetadata(string key)
     {
         this.ScheduleExpiredCleanup();
 
@@ -224,7 +224,7 @@ internal sealed class BlobCacheStorage : IDisposable
                 return null;
             }
 
-            return (name, entry);
+            return (name, entry, properties.Value.ETag);
         }
         catch (RequestFailedException exception) when (IsMissing(exception))
         {
@@ -474,23 +474,32 @@ internal sealed class BlobCacheStorage : IDisposable
     /// Restarts an entry's sliding window with a metadata-only write, in the background.
     /// </summary>
     /// <remarks>
-    /// Written unconditionally, with no ETag precondition. A refresh that lost a race would return
-    /// 412 and be recorded as a failed dependency for something that is not a failure; last writer
-    /// wins costs at most one sliding period of accuracy on an entry that was just rewritten.
+    /// Conditioned on the ETag the entry was read at. Set Blob Metadata replaces the whole set
+    /// from a snapshot taken at read time, so an unconditional write would put the old length and
+    /// encoding back over a concurrent rewrite and leave that payload undecodable. Losing the race
+    /// means the entry was just rewritten and its expiry is already current, so a 412 is a no-op.
     /// </remarks>
     /// <param name="name">Blob name</param>
     /// <param name="entry">Entry to refresh</param>
-    public void ScheduleRefresh(string name, BlobCacheEntry entry)
+    /// <param name="etag">ETag the entry was read at</param>
+    public void ScheduleRefresh(string name, BlobCacheEntry entry, ETag etag)
     {
         this.RunInBackground(
             async cancellationToken =>
             {
                 var refreshed = entry.Refresh(this.UtcNow);
 
-                await this.container.GetBlobClient(name).SetMetadataAsync(
-                    refreshed.ToMetadata(),
-                    conditions: null,
-                    cancellationToken);
+                try
+                {
+                    await this.container.GetBlobClient(name).SetMetadataAsync(
+                        refreshed.ToMetadata(),
+                        new BlobRequestConditions { IfMatch = etag },
+                        cancellationToken);
+                }
+                catch (RequestFailedException exception) when (exception.Status == 412)
+                {
+                    // Rewritten since the read, so the writer's own expiry stands.
+                }
             },
             "refreshing the sliding expiration of {BlobName}",
             name);
@@ -556,9 +565,9 @@ internal sealed class BlobCacheStorage : IDisposable
         string key,
         string name,
         BinaryData content,
-        IDictionary<string, string> metadata)
+        BlobDownloadDetails details)
     {
-        if (!BlobCacheEntry.TryParse(metadata, out var entry))
+        if (!BlobCacheEntry.TryParse(details.Metadata, out var entry))
         {
             // Written by a schema this version does not understand, so it cannot be served. Dropping
             // it keeps a rollback from leaving unreadable entries behind forever.
@@ -593,7 +602,7 @@ internal sealed class BlobCacheStorage : IDisposable
             return null;
         }
 
-        return new BlobCacheReadResult(name, entry, payload);
+        return new BlobCacheReadResult(name, entry, payload, details.ETag);
     }
 
     /// <summary>
