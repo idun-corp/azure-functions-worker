@@ -221,6 +221,15 @@ internal sealed class AzureBlobCache : IDistributedCache, IDisposable
 
     internal async Task RemoveAllAsync(string keyPattern, CancellationToken cancellationToken = default)
     {
+        // Without a trailing wildcard this is one key, matching SearchAsync and the Azure Table
+        // cache. Listing by it as a prefix would evict every key it happens to start.
+        if (!keyPattern.EndsWith('*'))
+        {
+            await this.RemoveAsync(keyPattern, cancellationToken);
+
+            return;
+        }
+
         var names = new List<string>();
 
         await foreach (var (name, _) in this.storage.ListAsync(LiteralPrefix(keyPattern), cancellationToken))

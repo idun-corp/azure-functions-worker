@@ -152,6 +152,25 @@ public class BlobCacheStorageTests
     }
 
     [Fact]
+    public async Task RemoveAllAsync_WithoutAWildcardRemovesOnlyTheExactKey()
+    {
+        var fixture = new Fixture();
+
+        await fixture.Cache.RemoveAllAsync(Key);
+
+        Assert.Equal([fixture.Name(Key)], fixture.Deleted);
+
+        // A prefix listing here would also take every key starting with this one.
+        fixture.Container.Verify(
+            container => container.GetBlobsAsync(
+                It.IsAny<BlobTraits>(),
+                It.IsAny<BlobStates>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task WriteAsync_UploadsThePayloadWithItsBookkeeping()
     {
         var fixture = new Fixture();
